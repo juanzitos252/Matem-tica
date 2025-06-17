@@ -1,7 +1,7 @@
 import flet as ft
 from flet import (
     Page, Text, ElevatedButton, Row, Column, TextField, View, Container,
-    MainAxisAlignment, CrossAxisAlignment, FontWeight, colors, alignment,
+    MainAxisAlignment, CrossAxisAlignment, FontWeight, alignment,
     TextAlign, ScrollMode, padding, border
 )
 import random
