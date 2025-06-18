@@ -125,7 +125,7 @@ def sugerir_tabuada_para_treino():
 inicializar_multiplicacoes()
 
 # --- Constantes de UI ---
-COR_FUNDO_PAGINA = ft.colors.BLUE_GREY_50 # Mais suave
+COR_FUNDO_PAGINA = ft.Colors.BLUE_GREY_50 # Mais suave
 BOTAO_LARGURA_PRINCIPAL = 220
 BOTAO_ALTURA_PRINCIPAL = 50
 BOTAO_LARGURA_OPCAO_QUIZ = 150
@@ -172,13 +172,13 @@ def build_tela_quiz(page: Page):
         registrar_resposta(pergunta_original_ref, era_correta)
         if era_correta:
             txt_feedback_ctrl_ref.value = "Correto!"
-            txt_feedback_ctrl_ref.color = ft.colors.GREEN_700 # Ajuste para verde mais padrão
-            botao_clicado_ref.bgcolor = ft.colors.GREEN_100
+            txt_feedback_ctrl_ref.color = ft.Colors.GREEN_700 # Ajuste para verde mais padrão
+            botao_clicado_ref.bgcolor = ft.Colors.GREEN_100
         else:
             resposta_certa_valor = pergunta_original_ref['fator1'] * pergunta_original_ref['fator2']
             txt_feedback_ctrl_ref.value = f"Errado! A resposta era {resposta_certa_valor}"
-            txt_feedback_ctrl_ref.color = ft.colors.RED_700 # Ajuste para vermelho mais padrão
-            botao_clicado_ref.bgcolor = ft.colors.RED_100
+            txt_feedback_ctrl_ref.color = ft.Colors.RED_700 # Ajuste para vermelho mais padrão
+            botao_clicado_ref.bgcolor = ft.Colors.RED_100
         for btn in todos_botoes_opcoes_ref: btn.disabled = True
         btn_proxima_ctrl_ref.visible = True
         page.update()
@@ -290,11 +290,11 @@ def build_tela_treino(page: Page):
                 if resposta_usuario_int == resposta_correta_esperada:
                     acertos += 1
                     acertou_questao = True
-                    campo.border_color = ft.colors.GREEN_700
+                    campo.border_color = ft.Colors.GREEN_700
                 else:
-                    campo.border_color = ft.colors.RED_700
+                    campo.border_color = ft.Colors.RED_700
             except ValueError:
-                campo.border_color = ft.colors.RED_700
+                campo.border_color = ft.Colors.RED_700
             campo.disabled = True
             pergunta_ref = next((p for p in multiplicacoes_data if (p['fator1'] == fator1 and p['fator2'] == fator2) or (p['fator1'] == fator2 and p['fator2'] == fator1)), None)
             if pergunta_ref:
@@ -313,7 +313,7 @@ def build_tela_treino(page: Page):
 
     container_tabuada = Container(
         content=coluna_itens_tabuada,
-        border=border.all(1, ft.colors.BLACK26),
+        border=border.all(1, ft.Colors.BLACK26),
         border_radius=8, # Aumentar border_radius
         padding=padding.all(15), # Aumentar padding interno
         width=360, # Aumentar largura
