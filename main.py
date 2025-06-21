@@ -166,7 +166,7 @@ def calcular_proficiencia_tabuadas():
             if (item_p['fator1'] == t or item_p['fator2'] == t) and par_ordenado not in vistos_para_tabuada_t:
                 itens_tabuada_t.append(item_p); vistos_para_tabuada_t.add(par_ordenado)
         media_pesos = (sum(it['peso'] for it in itens_tabuada_t) / len(itens_tabuada_t)) if itens_tabuada_t else 100.0
-        proficiencia_percentual = max(0, (100.0 - media_pesos) / (100.0 - 1.0)) * 100.0 # Evita peso mínimo de 0 para não dividir por 100
+        proficiencia_percentual = max(0, (100.0 - media_pesos) / (100.0 - 1.0)) * 100.0
         proficiencia_por_tabuada[t] = round(proficiencia_percentual, 1)
     return proficiencia_por_tabuada
 
@@ -208,7 +208,6 @@ def mudar_tema(page: Page, novo_tema_nome: str):
         page.client_storage.set("tema_preferido_quiz_tabuada", novo_tema_nome)
 
     page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
-    # page.update() # Removido para evitar update duplo, page.go fará o update.
 
     current_route = page.route
     page.go(current_route)
@@ -391,18 +390,57 @@ def build_tela_estatisticas(page: Page):
     lista_proficiencia_controls = []
     for t in range(1, 11):
         progresso = proficiencia_tabuadas.get(t, 0) / 100.0
-        cor_barra_semantica = "feedback_acerto_texto"
-        if progresso < 0.4: cor_barra_semantica = "feedback_erro_texto"
-        elif progresso < 0.7: cor_barra_semantica = "progressbar_cor"
+        cor_barra_semantica = "feedback_acerto_texto" # Default to green (high proficiency)
+        if progresso < 0.4: # Low proficiency
+            cor_barra_semantica = "feedback_erro_texto" # Red
+        elif progresso < 0.7: # Medium proficiency
+            cor_barra_semantica = "progressbar_cor" # Theme's progress bar color (e.g., purple/blue)
+
         cor_barra_dinamica = obter_cor_do_tema_ativo(cor_barra_semantica)
         progressbar_bg_color_dinamica = obter_cor_do_tema_ativo("progressbar_bg_cor")
-        lista_proficiencia_controls.append(Row([Text(f"Tabuada do {t}: ", size=16, color=obter_cor_do_tema_ativo("texto_padrao"), width=130), ProgressBar(value=progresso, width=150, color=cor_barra_dinamica, bgcolor=progressbar_bg_color_dinamica), Text(f"{proficiencia_tabuadas.get(t, 0):.1f}%", size=16, color=obter_cor_do_tema_ativo("texto_padrao"), width=60, text_align=TextAlign.RIGHT)], alignment=MainAxisAlignment.CENTER))
+
+        lista_proficiencia_controls.append(
+            Row(
+                [
+                    Text(f"Tabuada do {t}: ", size=16, color=obter_cor_do_tema_ativo("texto_padrao"), width=130),
+                    ProgressBar(value=progresso, width=150, color=cor_barra_dinamica, bgcolor=progressbar_bg_color_dinamica),
+                    Text(f"{proficiencia_tabuadas.get(t, 0):.1f}%", size=16, color=obter_cor_do_tema_ativo("texto_padrao"), width=60, text_align=TextAlign.RIGHT)
+                ],
+                alignment=MainAxisAlignment.CENTER
+            )
+        )
+
     col_prof = Column(controls=lista_proficiencia_controls, spacing=8, horizontal_alignment=CrossAxisAlignment.CENTER)
+
     top_3_txt = [Text(item, size=16, color=obter_cor_do_tema_ativo("texto_padrao")) for item in stats_gerais['top_3_dificeis']]
-    if not top_3_txt: top_3_txt = [Text("Nenhuma dificuldade registrada ainda!", size=16, color=obter_cor_do_tema_ativo("texto_padrao"))]
+    if not top_3_txt:
+        top_3_txt = [Text("Nenhuma dificuldade registrada ainda!", size=16, color=obter_cor_do_tema_ativo("texto_padrao"))]
+
     col_dificuldades = Column(controls=top_3_txt, spacing=5, horizontal_alignment=CrossAxisAlignment.CENTER)
-            Text("Maiores Dificuldades Atuais:", size=22, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=ft.margin.only(top=20, bottom=10)), col_dificuldades, Container(height=25), ElevatedButton("Voltar ao Menu", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/"), tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")),
-        ], # Fim da lista de controls
+
+    conteudo_stats = Column(
+        controls=[
+            Text("Suas Estatísticas", size=32, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), text_align=TextAlign.CENTER),
+            Container(height=15),
+            Text(f"Total de Perguntas Respondidas: {stats_gerais['total_respondidas']}", size=18, color=obter_cor_do_tema_ativo("texto_padrao")),
+            Text(f"Percentual de Acertos Geral: {stats_gerais['percentual_acertos_geral']:.1f}%", size=18, color=obter_cor_do_tema_ativo("texto_padrao")),
+            Container(height=10),
+            Text("Proficiência por Tabuada:", size=22, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=ft.margin.only(top=20, bottom=10)),
+            col_prof,
+            Container(height=10),
+            Text("Maiores Dificuldades Atuais:", size=22, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=ft.margin.only(top=20, bottom=10)),
+            col_dificuldades,
+            Container(height=25),
+            ElevatedButton(
+                "Voltar ao Menu",
+                width=BOTAO_LARGURA_PRINCIPAL,
+                height=BOTAO_ALTURA_PRINCIPAL,
+                on_click=lambda _: page.go("/"),
+                tooltip="Retornar à tela inicial.",
+                bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"),
+                color=obter_cor_do_tema_ativo("botao_principal_texto")
+            ) # <--- VÍRGULA ESTAVA FALTANDO AQUI, E FOI ADICIONADA NO PATCH ANTERIOR (subtarefa 18)
+        ],
         scroll=ScrollMode.AUTO,
         alignment=MainAxisAlignment.CENTER,
         horizontal_alignment=CrossAxisAlignment.CENTER,
@@ -426,11 +464,10 @@ def main(page: Page):
     page.window_height = 800
     page.fonts = {"RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"}
 
-    def route_change(route_obj): # Argumento nomeado como route_obj para clareza
+    def route_change(route_obj):
         page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
         page.views.clear()
 
-        # Adiciona a view da rota raiz (Tela de Apresentação) sempre primeiro
         page.views.append(
             View(
                 route="/",
@@ -439,7 +476,6 @@ def main(page: Page):
                 horizontal_alignment=CrossAxisAlignment.CENTER
             )
         )
-        # Adiciona a view específica da rota atual, se não for a raiz
         if page.route == "/quiz":
             page.views.append(View("/quiz", [build_tela_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
         elif page.route == "/quiz_invertido":
@@ -451,7 +487,7 @@ def main(page: Page):
 
         page.update()
 
-    def view_pop(view_instance): # Argumento nomeado como view_instance para clareza
+    def view_pop(view_instance):
         page.views.pop()
         top_view = page.views[-1]
         page.go(top_view.route)
@@ -461,5 +497,9 @@ def main(page: Page):
     page.go("/")
 
 ft.app(target=main)
+
+[end of main.py]
+
+[end of main.py]
 
 [end of main.py]
