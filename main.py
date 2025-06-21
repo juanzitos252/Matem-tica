@@ -180,8 +180,8 @@ TEMAS = {
 }
 tema_ativo_nome = "colorido"
 def obter_cor_do_tema_ativo(nome_cor_semantica: str):
-    tema_atual = TEMAS.get(tema_ativo_nome, TEMAS["colorido"]) # Fallback para tema "colorido"
-    return tema_atual.get(nome_cor_semantica, ft.Colors.BLACK) # Fallback para cor preta
+    tema_atual = TEMAS.get(tema_ativo_nome, TEMAS["colorido"])
+    return tema_atual.get(nome_cor_semantica, ft.Colors.BLACK)
 
 # --- Constantes de UI (Dimensões e Animações) ---
 BOTAO_LARGURA_PRINCIPAL = 220
@@ -199,16 +199,18 @@ ANIMACAO_FEEDBACK_ESCALA = Animation(300, AnimationCurve.EASE_OUT_BACK)
 # --- Funções de Construção de Tela ---
 def mudar_tema(page: Page, novo_tema_nome: str):
     global tema_ativo_nome
+    if tema_ativo_nome == novo_tema_nome:
+        return
+
     tema_ativo_nome = novo_tema_nome
+
     if page.client_storage:
         page.client_storage.set("tema_preferido_quiz_tabuada", novo_tema_nome)
 
-    # Atualizar cores que dependem do tema diretamente na page
-    # page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina") - Isso será feito no route_change
+    page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+    # page.update() # Removido para evitar update duplo, page.go fará o update.
 
-    # Forçar reconstrução da view atual para aplicar o novo tema
     current_route = page.route
-    # page.views.clear() # Limpar views é feito pelo route_change ao chamar page.go
     page.go(current_route)
 
 def build_tela_apresentacao(page: Page):
@@ -236,7 +238,7 @@ def build_tela_apresentacao(page: Page):
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
             ElevatedButton("Modo Treino", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/treino"), tooltip="Treinar uma tabuada.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")),
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
-            ElevatedButton("Estatísticas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/estatisticas"), tooltip="Veja seu progresso.", bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")), # Usando cor de opção de quiz para variar
+            ElevatedButton("Estatísticas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/estatisticas"), tooltip="Veja seu progresso.", bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")),
             Container(height=20, margin=ft.margin.only(top=10)),
         ] + controles_botoes_tema,
         alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL
@@ -418,10 +420,20 @@ def main(page: Page):
     page.window_height = 800
     page.fonts = {"RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"}
 
-    def route_change(route):
+    def route_change(route_obj): # Argumento nomeado como route_obj para clareza
         page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
         page.views.clear()
-        page.views.append(View("/", [build_tela_apresentacao(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+
+        # Adiciona a view da rota raiz (Tela de Apresentação) sempre primeiro
+        page.views.append(
+            View(
+                route="/",
+                controls=[build_tela_apresentacao(page)],
+                vertical_alignment=MainAxisAlignment.CENTER,
+                horizontal_alignment=CrossAxisAlignment.CENTER
+            )
+        )
+        # Adiciona a view específica da rota atual, se não for a raiz
         if page.route == "/quiz":
             page.views.append(View("/quiz", [build_tela_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
         elif page.route == "/quiz_invertido":
@@ -430,9 +442,10 @@ def main(page: Page):
             page.views.append(View("/treino", [build_tela_treino(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
         elif page.route == "/estatisticas":
             page.views.append(View("/estatisticas", [build_tela_estatisticas(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+
         page.update()
 
-    def view_pop(view_instance):
+    def view_pop(view_instance): # Argumento nomeado como view_instance para clareza
         page.views.pop()
         top_view = page.views[-1]
         page.go(top_view.route)
@@ -442,3 +455,5 @@ def main(page: Page):
     page.go("/")
 
 ft.app(target=main)
+
+[end of main.py]
