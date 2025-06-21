@@ -3,7 +3,7 @@ from flet import (
     Page, Text, ElevatedButton, Row, Column, TextField, View, Container,
     MainAxisAlignment, CrossAxisAlignment, FontWeight, alignment,
     TextAlign, ScrollMode, padding, border, KeyboardType,
-    Animation, AnimationCurve, Margin, ProgressBar
+    Animation, AnimationCurve, ProgressBar # Margin removida
 )
 import random
 import time
@@ -401,7 +401,13 @@ def build_tela_estatisticas(page: Page):
     top_3_txt = [Text(item, size=16, color=obter_cor_do_tema_ativo("texto_padrao")) for item in stats_gerais['top_3_dificeis']]
     if not top_3_txt: top_3_txt = [Text("Nenhuma dificuldade registrada ainda!", size=16, color=obter_cor_do_tema_ativo("texto_padrao"))]
     col_dificuldades = Column(controls=top_3_txt, spacing=5, horizontal_alignment=CrossAxisAlignment.CENTER)
-    conteudo_stats = Column(controls=[Text("Suas Estatísticas", size=32, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), text_align=TextAlign.CENTER), Container(height=15), Text(f"Total de Perguntas Respondidas: {stats_gerais['total_respondidas']}", size=18, color=obter_cor_do_tema_ativo("texto_padrao")), Text(f"Percentual de Acertos Geral: {stats_gerais['percentual_acertos_geral']:.1f}%", size=18, color=obter_cor_do_tema_ativo("texto_padrao")), Container(height=10), Text("Proficiência por Tabuada:", size=22, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=ft.margin.only(top=20, bottom=10)), col_prof, Container(height=10), Text("Maiores Dificuldades Atuais:", size=22, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=ft.margin.only(top=20, bottom=10)), col_dificuldades, Container(height=25), ElevatedButton("Voltar ao Menu", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/"), tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))], scroll=ScrollMode.AUTO, alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL)
+            Text("Maiores Dificuldades Atuais:", size=22, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=ft.margin.only(top=20, bottom=10)), col_dificuldades, Container(height=25), ElevatedButton("Voltar ao Menu", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/"), tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")),
+        ], # Fim da lista de controls
+        scroll=ScrollMode.AUTO,
+        alignment=MainAxisAlignment.CENTER,
+        horizontal_alignment=CrossAxisAlignment.CENTER,
+        spacing=ESPACAMENTO_COLUNA_GERAL
+    )
     return Container(content=conteudo_stats, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
 
 # --- Configuração Principal da Página e Rotas ---
