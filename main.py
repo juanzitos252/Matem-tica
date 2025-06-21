@@ -2,7 +2,7 @@ import flet as ft
 from flet import (
     Page, Text, ElevatedButton, Row, Column, TextField, View, Container,
     MainAxisAlignment, CrossAxisAlignment, FontWeight, alignment,
-    TextAlign, ScrollMode, padding, border
+    TextAlign, ScrollMode, padding, border, KeyboardType
 )
 import random
 import time
@@ -125,7 +125,7 @@ def sugerir_tabuada_para_treino():
 inicializar_multiplicacoes()
 
 # --- Constantes de UI ---
-COR_FUNDO_PAGINA = ft.Colors.BLUE_GREY_50 # Mais suave
+# Constantes de Dimensões e Espaçamento
 BOTAO_LARGURA_PRINCIPAL = 220
 BOTAO_ALTURA_PRINCIPAL = 50
 BOTAO_LARGURA_OPCAO_QUIZ = 150
@@ -133,37 +133,80 @@ BOTAO_ALTURA_OPCAO_QUIZ = 50
 PADDING_VIEW = padding.symmetric(horizontal=25, vertical=20)
 ESPACAMENTO_COLUNA_GERAL = 20
 
+# --- Novas Constantes de Cores (Paleta: Roxo, Azul, Rosa, Verde) ---
+COR_ROXO_PRINCIPAL = ft.Colors.DEEP_PURPLE_400
+COR_ROXO_ESCURO_TEXTO = ft.Colors.DEEP_PURPLE_700
+COR_AZUL_BOTAO_OPCAO = ft.Colors.BLUE_300
+COR_ROSA_DESTAQUE = ft.Colors.PINK_ACCENT_200 # Ou ft.Colors.PINK_300
+COR_VERDE_ACERTO = ft.Colors.GREEN_600
+COR_VERMELHO_ERRO = ft.Colors.RED_500 # Um pouco menos intenso que o RED_700 anterior
+COR_TEXTO_SOBRE_ROXO = ft.Colors.WHITE
+COR_TEXTO_SOBRE_AZUL = ft.Colors.WHITE # Ou BLACK87 se o azul for muito claro
+COR_TEXTO_SOBRE_ROSA = ft.Colors.BLACK87 # Geralmente rosa claro pede texto escuro
+COR_TEXTO_PADRAO_ESCURO = ft.Colors.BLACK87 # Para textos gerais sobre fundos claros
+COR_TEXTO_TITULOS = COR_ROXO_ESCURO_TEXTO # Usar um roxo escuro para títulos
+COR_FUNDO_PAGINA = ft.Colors.PURPLE_50 # Um roxo bem claro para o fundo geral
+COR_FUNDO_CONTAINER_TREINO = ft.Colors.WHITE # Manter branco para clareza na área de treino
+COR_BORDA_CONTAINER_TREINO = COR_ROXO_PRINCIPAL
+COR_BOTAO_FEEDBACK_ACERTO_BG = ft.Colors.GREEN_100 # Fundo do botão de opção correto
+COR_BOTAO_FEEDBACK_ERRO_BG = ft.Colors.RED_100   # Fundo do botão de opção errado
+
 # --- Funções de Construção de Tela ---
 def build_tela_apresentacao(page: Page):
     conteudo_apresentacao = Column(
         controls=[
-            Text("Quiz Mestre da Tabuada", size=32, weight=FontWeight.BOLD, text_align=TextAlign.CENTER), # Ajuste leve no tamanho
-            Text("Aprenda e memorize a tabuada de forma divertida e adaptativa!", size=18, text_align=TextAlign.CENTER),
-            Container(height=25), # Aumentar espaçamento
+            Text(
+                "Quiz Mestre da Tabuada",
+                size=32,
+                weight=FontWeight.BOLD,
+                text_align=TextAlign.CENTER,
+                color=COR_TEXTO_TITULOS
+            ),
+            Text(
+                "Aprenda e memorize a tabuada de forma divertida e adaptativa!",
+                size=18,
+                text_align=TextAlign.CENTER,
+                color=COR_TEXTO_PADRAO_ESCURO
+            ),
+            Container(height=25),
             ElevatedButton(
                 "Iniciar Quiz",
                 width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
                 on_click=lambda _: page.go("/quiz"),
-                tooltip="Começar um novo quiz com perguntas aleatórias."
+                tooltip="Começar um novo quiz com perguntas aleatórias.",
+                bgcolor=COR_ROXO_PRINCIPAL,
+                color=COR_TEXTO_SOBRE_ROXO
             ),
             Container(height=15),
             ElevatedButton(
                 "Modo Treino",
                 width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
                 on_click=lambda _: page.go("/treino"),
-                tooltip="Treinar uma tabuada específica ou uma sugerida."
+                tooltip="Treinar uma tabuada específica ou uma sugerida.",
+                bgcolor=COR_ROXO_PRINCIPAL,
+                color=COR_TEXTO_SOBRE_ROXO
             ),
         ],
         alignment=MainAxisAlignment.CENTER,
         horizontal_alignment=CrossAxisAlignment.CENTER,
-        spacing=ESPACAMENTO_COLUNA_GERAL # Usar constante
+        spacing=ESPACAMENTO_COLUNA_GERAL
     )
     return Container(content=conteudo_apresentacao, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
 
 def build_tela_quiz(page: Page):
-    texto_pergunta = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER) # Ajuste leve
-    botoes_opcoes = [ElevatedButton(width=BOTAO_LARGURA_OPCAO_QUIZ, height=BOTAO_ALTURA_OPCAO_QUIZ) for _ in range(4)]
-    texto_feedback = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER) # Consistente com subtitulo
+    texto_pergunta = Text(
+        size=30,
+        weight=FontWeight.BOLD,
+        text_align=TextAlign.CENTER,
+        color=COR_TEXTO_TITULOS
+    )
+    botoes_opcoes = [
+        ElevatedButton(
+            width=BOTAO_LARGURA_OPCAO_QUIZ, height=BOTAO_ALTURA_OPCAO_QUIZ,
+            # bgcolor e color serão definidos em carregar_nova_pergunta
+        ) for _ in range(4)
+    ]
+    texto_feedback = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER) # Cor definida dinamicamente
 
     def handle_resposta(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref):
         dados_botao = botao_clicado_ref.data
@@ -172,13 +215,15 @@ def build_tela_quiz(page: Page):
         registrar_resposta(pergunta_original_ref, era_correta)
         if era_correta:
             txt_feedback_ctrl_ref.value = "Correto!"
-            txt_feedback_ctrl_ref.color = ft.Colors.GREEN_700 # Ajuste para verde mais padrão
-            botao_clicado_ref.bgcolor = ft.Colors.GREEN_100
+            txt_feedback_ctrl_ref.color = COR_VERDE_ACERTO
+            botao_clicado_ref.bgcolor = COR_BOTAO_FEEDBACK_ACERTO_BG
+            # botao_clicado_ref.color = COR_VERDE_ACERTO # Opcional, se o texto precisar mudar
         else:
             resposta_certa_valor = pergunta_original_ref['fator1'] * pergunta_original_ref['fator2']
             txt_feedback_ctrl_ref.value = f"Errado! A resposta era {resposta_certa_valor}"
-            txt_feedback_ctrl_ref.color = ft.Colors.RED_700 # Ajuste para vermelho mais padrão
-            botao_clicado_ref.bgcolor = ft.Colors.RED_100
+            txt_feedback_ctrl_ref.color = COR_VERMELHO_ERRO
+            botao_clicado_ref.bgcolor = COR_BOTAO_FEEDBACK_ERRO_BG
+            # botao_clicado_ref.color = COR_VERMELHO_ERRO # Opcional
         for btn in todos_botoes_opcoes_ref: btn.disabled = True
         btn_proxima_ctrl_ref.visible = True
         page.update()
@@ -187,7 +232,9 @@ def build_tela_quiz(page: Page):
         "Próxima Pergunta",
         on_click=None, visible=False,
         width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
-        tooltip="Carregar a próxima pergunta do quiz."
+        tooltip="Carregar a próxima pergunta do quiz.",
+        bgcolor=COR_ROXO_PRINCIPAL,
+        color=COR_TEXTO_SOBRE_ROXO
     )
 
     def carregar_nova_pergunta(page_ref, txt_pergunta_ctrl_ref, btn_opcoes_ctrls_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref):
@@ -207,7 +254,8 @@ def build_tela_quiz(page: Page):
             btn_opcoes_ctrls_ref[i].data = {'opcao': opcoes[i], 'correta': opcoes[i] == resposta_correta_valor, 'pergunta_original': pergunta_selecionada}
             current_button = btn_opcoes_ctrls_ref[i]
             btn_opcoes_ctrls_ref[i].on_click = lambda e, btn=current_button: handle_resposta(page_ref, btn, btn_opcoes_ctrls_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref)
-            btn_opcoes_ctrls_ref[i].bgcolor = None
+            btn_opcoes_ctrls_ref[i].bgcolor = COR_AZUL_BOTAO_OPCAO # Estado normal
+            btn_opcoes_ctrls_ref[i].color = COR_TEXTO_SOBRE_AZUL   # Estado normal
             btn_opcoes_ctrls_ref[i].disabled = False
             btn_opcoes_ctrls_ref[i].visible = True
         txt_feedback_ctrl_ref.value = ""
@@ -221,14 +269,16 @@ def build_tela_quiz(page: Page):
         "Voltar ao Menu",
         on_click=lambda _: page.go("/"),
         width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
-        tooltip="Retornar à tela inicial."
+        tooltip="Retornar à tela inicial.",
+        bgcolor=COR_ROXO_PRINCIPAL,
+        color=COR_TEXTO_SOBRE_ROXO
     )
 
     layout_botoes_opcoes = Column(
         [
-            Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), # Aumentar espaçamento
+            Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15),
             Container(height=10),
-            Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15), # Aumentar espaçamento
+            Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15),
         ],
         horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10
     )
@@ -236,11 +286,11 @@ def build_tela_quiz(page: Page):
     conteudo_quiz = Column(
         controls=[
             texto_pergunta,
-            Container(height=15), # Ajuste de espaçamento
+            Container(height=15),
             layout_botoes_opcoes,
             Container(height=15),
             texto_feedback,
-            Container(height=20), # Aumentar antes do botão próxima
+            Container(height=20),
             botao_proxima,
             Container(height=10),
             botao_voltar
@@ -254,27 +304,44 @@ def build_tela_quiz(page: Page):
 
 def build_tela_treino(page: Page):
     tabuada_sugerida = sugerir_tabuada_para_treino()
-    titulo_treino = Text(f"Treinando a Tabuada do {tabuada_sugerida}", size=28, weight=FontWeight.BOLD, text_align=TextAlign.CENTER)
+    titulo_treino = Text(
+        f"Treinando a Tabuada do {tabuada_sugerida}",
+        size=28,
+        weight=FontWeight.BOLD,
+        text_align=TextAlign.CENTER,
+        color=COR_TEXTO_TITULOS
+    )
     campos_tabuada_refs = []
-    coluna_itens_tabuada = Column(spacing=10, scroll=ScrollMode.AUTO, expand=True, horizontal_alignment=CrossAxisAlignment.CENTER) # spacing 10
+    coluna_itens_tabuada = Column(spacing=10, scroll=ScrollMode.AUTO, expand=True, horizontal_alignment=CrossAxisAlignment.CENTER)
 
     for i in range(1, 11):
         resposta_correta_val = tabuada_sugerida * i
-        texto_multiplicacao = Text(f"{tabuada_sugerida} x {i} = ", size=18)
+        texto_multiplicacao = Text(
+            f"{tabuada_sugerida} x {i} = ",
+            size=18,
+            color=COR_TEXTO_PADRAO_ESCURO
+        )
         campo_resposta = TextField(
             width=100, text_align=TextAlign.CENTER,
             data={'fator1': tabuada_sugerida, 'fator2': i, 'resposta_correta': resposta_correta_val},
-            keyboard_type=ft.KeyboardType.NUMBER
+            keyboard_type=KeyboardType.NUMBER # Corrigido para ft.KeyboardType
         )
         campos_tabuada_refs.append(campo_resposta)
         coluna_itens_tabuada.controls.append(Row([texto_multiplicacao, campo_resposta], alignment=MainAxisAlignment.CENTER, spacing=10))
 
-    texto_resumo_treino = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER)
+    texto_resumo_treino = Text(
+        size=18,
+        weight=FontWeight.BOLD,
+        text_align=TextAlign.CENTER,
+        color=COR_TEXTO_PADRAO_ESCURO
+    )
 
     botao_verificar = ElevatedButton(
         "Verificar Respostas",
         width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
-        tooltip="Corrigir as respostas da tabuada."
+        tooltip="Corrigir as respostas da tabuada.",
+        bgcolor=COR_ROXO_PRINCIPAL,
+        color=COR_TEXTO_SOBRE_ROXO
     )
 
     def handle_verificar_treino(e):
@@ -290,11 +357,11 @@ def build_tela_treino(page: Page):
                 if resposta_usuario_int == resposta_correta_esperada:
                     acertos += 1
                     acertou_questao = True
-                    campo.border_color = ft.Colors.GREEN_700
+                    campo.border_color = COR_VERDE_ACERTO
                 else:
-                    campo.border_color = ft.Colors.RED_700
+                    campo.border_color = COR_VERMELHO_ERRO
             except ValueError:
-                campo.border_color = ft.Colors.RED_700
+                campo.border_color = COR_VERMELHO_ERRO
             campo.disabled = True
             pergunta_ref = next((p for p in multiplicacoes_data if (p['fator1'] == fator1 and p['fator2'] == fator2) or (p['fator1'] == fator2 and p['fator2'] == fator1)), None)
             if pergunta_ref:
@@ -308,33 +375,36 @@ def build_tela_treino(page: Page):
         "Voltar ao Menu",
         on_click=lambda _: page.go("/"),
         width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
-        tooltip="Retornar à tela inicial."
+        tooltip="Retornar à tela inicial.",
+        bgcolor=COR_ROXO_PRINCIPAL,
+        color=COR_TEXTO_SOBRE_ROXO
     )
 
     container_tabuada = Container(
         content=coluna_itens_tabuada,
-        border=border.all(1, ft.Colors.BLACK26),
-        border_radius=8, # Aumentar border_radius
-        padding=padding.all(15), # Aumentar padding interno
-        width=360, # Aumentar largura
-        height=420 # Aumentar altura
+        border=border.all(2, COR_BORDA_CONTAINER_TREINO), # Aumentei a espessura da borda para 2
+        border_radius=8,
+        padding=padding.all(15),
+        width=360,
+        height=420,
+        bgcolor=COR_FUNDO_CONTAINER_TREINO
     )
 
     conteudo_treino = Column(
         controls=[
             titulo_treino,
-            Container(height=10), # Ajuste
+            Container(height=10),
             container_tabuada,
-            Container(height=10), # Ajuste
+            Container(height=10),
             botao_verificar,
             Container(height=10),
             texto_resumo_treino,
-            Container(height=15), # Aumentar antes do botão voltar
+            Container(height=15),
             botao_voltar_menu
         ],
-        alignment=MainAxisAlignment.CENTER, # Centralizar todo o conteúdo da tela de treino
+        alignment=MainAxisAlignment.CENTER,
         horizontal_alignment=CrossAxisAlignment.CENTER,
-        spacing=ESPACAMENTO_COLUNA_GERAL, # Usar constante
+        spacing=ESPACAMENTO_COLUNA_GERAL,
         scroll=ScrollMode.AUTO
     )
     return Container(content=conteudo_treino, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
@@ -344,23 +414,21 @@ def main(page: Page):
     page.title = "Quiz Mestre da Tabuada"
     page.vertical_alignment = MainAxisAlignment.CENTER
     page.horizontal_alignment = CrossAxisAlignment.CENTER
-    page.bgcolor = COR_FUNDO_PAGINA
-    page.window_width = 480 # Aumentar um pouco a largura
-    page.window_height = 800 # Aumentar um pouco a altura
-    page.fonts = { # Exemplo de como adicionar uma fonte personalizada (se desejado e disponível no ambiente)
+    page.bgcolor = COR_FUNDO_PAGINA # Aplicando a nova cor de fundo da página
+    page.window_width = 480
+    page.window_height = 800
+    page.fonts = {
         "RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"
     }
     # page.theme = ft.Theme(font_family="RobotoSlab") # Ativar a fonte (opcional)
 
-
     def route_change(route):
         page.views.clear()
-        # Adiciona a view da rota raiz (Tela de Apresentação)
         page.views.append(
             View(
                 route="/",
                 controls=[build_tela_apresentacao(page)],
-                vertical_alignment=MainAxisAlignment.CENTER, # Centraliza o container da tela
+                vertical_alignment=MainAxisAlignment.CENTER,
                 horizontal_alignment=CrossAxisAlignment.CENTER
             )
         )
@@ -369,7 +437,7 @@ def main(page: Page):
                 View(
                     route="/quiz",
                     controls=[build_tela_quiz(page)],
-                    vertical_alignment=MainAxisAlignment.CENTER, # Centraliza o container da tela
+                    vertical_alignment=MainAxisAlignment.CENTER,
                     horizontal_alignment=CrossAxisAlignment.CENTER
                 )
             )
@@ -378,13 +446,13 @@ def main(page: Page):
                 View(
                     route="/treino",
                     controls=[build_tela_treino(page)],
-                    vertical_alignment=MainAxisAlignment.CENTER, # Centraliza o container da tela
+                    vertical_alignment=MainAxisAlignment.CENTER,
                     horizontal_alignment=CrossAxisAlignment.CENTER
                 )
             )
         page.update()
 
-    def view_pop(view_instance): # Renomeado para clareza
+    def view_pop(view_instance):
         page.views.pop()
         top_view = page.views[-1]
         page.go(top_view.route)
