@@ -108,76 +108,26 @@ def gerar_opcoes(fator1: int, fator2: int, todas_multiplicacoes_data_ref):
 
 def gerar_opcoes_quiz_invertido(multiplicacao_base_ref, todas_multiplicacoes_data_ref):
     resposta_correta_valor = multiplicacao_base_ref['fator1'] * multiplicacao_base_ref['fator2']
-
-    opcao_correta_obj = {
-        'texto': f"{multiplicacao_base_ref['fator1']} x {multiplicacao_base_ref['fator2']}",
-        'original_ref': multiplicacao_base_ref, # Referência ao item original em multiplicacoes_data
-        'is_correct': True
-    }
+    opcao_correta_obj = {'texto': f"{multiplicacao_base_ref['fator1']} x {multiplicacao_base_ref['fator2']}", 'original_ref': multiplicacao_base_ref, 'is_correct': True}
     opcoes_geradas = [opcao_correta_obj]
-
     candidatos_embaralhados = random.sample(todas_multiplicacoes_data_ref, len(todas_multiplicacoes_data_ref))
-
     for item_candidato in candidatos_embaralhados:
-        if len(opcoes_geradas) >= 4:
-            break
-
-        # Pular se for exatamente a mesma multiplicação base (mesmos fatores)
-        if item_candidato['fator1'] == multiplicacao_base_ref['fator1'] and \
-           item_candidato['fator2'] == multiplicacao_base_ref['fator2']:
-            continue
-
-        # Pular se o resultado for o mesmo da pergunta base, mas os fatores são diferentes
-        # Isso evita ter múltiplas opções que levam ao mesmo resultado, ex: 2x6 e 3x4 para a pergunta "Qual operação resulta em 12?"
-        # se a pergunta base (a correta) for 2x6.
-        if item_candidato['fator1'] * item_candidato['fator2'] == resposta_correta_valor:
-            continue
-
-        opcoes_geradas.append({
-            'texto': f"{item_candidato['fator1']} x {item_candidato['fator2']}",
-            'original_ref': item_candidato, # Referência ao item original
-            'is_correct': False
-        })
-
-    # Fallback: se ainda não tem 4 opções (altamente improvável com 100 itens)
-    # Gera fatores aleatórios que não resultem em `resposta_correta_valor`
-    # e que não sejam os fatores da `multiplicacao_base_ref`.
+        if len(opcoes_geradas) >= 4: break
+        if item_candidato['fator1'] == multiplicacao_base_ref['fator1'] and item_candidato['fator2'] == multiplicacao_base_ref['fator2']: continue
+        if item_candidato['fator1'] * item_candidato['fator2'] == resposta_correta_valor: continue
+        opcoes_geradas.append({'texto': f"{item_candidato['fator1']} x {item_candidato['fator2']}", 'original_ref': item_candidato, 'is_correct': False})
     tentativas_fallback = 0
     while len(opcoes_geradas) < 4 and tentativas_fallback < 50:
         tentativas_fallback += 1
-        f1 = random.randint(1, 10)
-        f2 = random.randint(1, 10)
-
-        # Verifica se já existe uma opção com estes fatores ou se resulta no mesmo valor da resposta correta
-        # ou se são os mesmos fatores da pergunta base
-        if (f1 == multiplicacao_base_ref['fator1'] and f2 == multiplicacao_base_ref['fator2']) or \
-           (f1 * f2 == resposta_correta_valor):
-            continue
-
-        # Verifica se a combinação de fatores já está nas opções geradas
-        existe = False
-        for op_existente in opcoes_geradas:
-            ref_existente = op_existente['original_ref']
-            if (ref_existente['fator1'] == f1 and ref_existente['fator2'] == f2) or \
-               (ref_existente['fator1'] == f2 and ref_existente['fator2'] == f1):
-                existe = True
-                break
-        if existe:
-            continue
-
-        # Cria um "dummy" ref para o fallback, já que não vem de multiplicacoes_data diretamente
-        dummy_ref = {'fator1': f1, 'fator2': f2, 'peso': 10.0, 'historico_erros': [],
-                     'vezes_apresentada': 0, 'vezes_correta': 0, 'ultima_vez_apresentada_ts': 0.0}
-
-        opcoes_geradas.append({
-            'texto': f"{f1} x {f2}",
-            'original_ref': dummy_ref,
-            'is_correct': False
-        })
-
+        f1, f2 = random.randint(1, 10), random.randint(1, 10)
+        if (f1 == multiplicacao_base_ref['fator1'] and f2 == multiplicacao_base_ref['fator2']) or (f1 * f2 == resposta_correta_valor): continue
+        existe = any((op['original_ref']['fator1'] == f1 and op['original_ref']['fator2'] == f2) or \
+                     (op['original_ref']['fator1'] == f2 and op['original_ref']['fator2'] == f1) for op in opcoes_geradas)
+        if existe: continue
+        dummy_ref = {'fator1': f1, 'fator2': f2, 'peso': 10.0, 'historico_erros': [], 'vezes_apresentada': 0, 'vezes_correta': 0, 'ultima_vez_apresentada_ts': 0.0}
+        opcoes_geradas.append({'texto': f"{f1} x {f2}", 'original_ref': dummy_ref, 'is_correct': False})
     random.shuffle(opcoes_geradas)
-    return opcoes_geradas[:4] # Garante que apenas 4 opções sejam retornadas
-
+    return opcoes_geradas[:4]
 
 def sugerir_tabuada_para_treino():
     global multiplicacoes_data
@@ -187,19 +137,16 @@ def sugerir_tabuada_para_treino():
     for item in multiplicacoes_data:
         fator1, fator2, peso = item['fator1'], item['fator2'], item['peso']
         if fator1 in pesos_por_tabuada:
-            pesos_por_tabuada[fator1] += peso
-            contagem_por_tabuada[fator1] += 1
+            pesos_por_tabuada[fator1] += peso; contagem_por_tabuada[fator1] += 1
         if fator2 in pesos_por_tabuada and fator1 != fator2:
-            pesos_por_tabuada[fator2] += peso
-            contagem_por_tabuada[fator2] += 1
+            pesos_por_tabuada[fator2] += peso; contagem_por_tabuada[fator2] += 1
     media_pesos = { tab: pesos_por_tabuada[tab] / contagem_por_tabuada[tab] if contagem_por_tabuada[tab] > 0 else 0 for tab in pesos_por_tabuada }
-    if not any(media_pesos.values()): return random.randint(1,10)
+    if not any(v > 0 for v in media_pesos.values()): return random.randint(1,10) # Verifica se algum peso é maior que 0
     return max(media_pesos, key=media_pesos.get)
 
 def calcular_estatisticas_gerais():
     global multiplicacoes_data
-    if not multiplicacoes_data:
-        return {'total_respondidas': 0, 'percentual_acertos_geral': 0, 'top_3_dificeis': []}
+    if not multiplicacoes_data: return {'total_respondidas': 0, 'percentual_acertos_geral': 0, 'top_3_dificeis': []}
     total_respondidas = sum(item['vezes_apresentada'] for item in multiplicacoes_data)
     total_acertos = sum(item['vezes_correta'] for item in multiplicacoes_data)
     percentual_acertos_geral = (total_acertos / total_respondidas * 100) if total_respondidas > 0 else 0
@@ -213,79 +160,91 @@ def calcular_proficiencia_tabuadas():
     proficiencia_por_tabuada = {i: 0.0 for i in range(1, 11)}
     if not multiplicacoes_data: return proficiencia_por_tabuada
     for t in range(1, 11):
-        itens_tabuada_t = []
-        vistos_para_tabuada_t = set()
+        itens_tabuada_t, vistos_para_tabuada_t = [], set()
         for item_p in multiplicacoes_data:
             par_ordenado = tuple(sorted((item_p['fator1'], item_p['fator2'])))
-            if (item_p['fator1'] == t or item_p['fator2'] == t) and par_ordenado not in vistos_para_tabuada_t :
-                if item_p['fator1'] == t or item_p['fator2'] == t:
-                     itens_tabuada_t.append(item_p)
-                     vistos_para_tabuada_t.add(par_ordenado)
-        if not itens_tabuada_t: media_pesos = 100.0
-        else:
-            soma_pesos_tabuada_t = sum(item_t['peso'] for item_t in itens_tabuada_t)
-            media_pesos = soma_pesos_tabuada_t / len(itens_tabuada_t)
-        proficiencia_percentual = max(0, (100.0 - media_pesos) / (100.0 - 1.0)) * 100.0
+            if (item_p['fator1'] == t or item_p['fator2'] == t) and par_ordenado not in vistos_para_tabuada_t:
+                itens_tabuada_t.append(item_p); vistos_para_tabuada_t.add(par_ordenado)
+        media_pesos = (sum(it['peso'] for it in itens_tabuada_t) / len(itens_tabuada_t)) if itens_tabuada_t else 100.0
+        proficiencia_percentual = max(0, (100.0 - media_pesos) / (100.0 - 1.0)) * 100.0 # Evita peso mínimo de 0 para não dividir por 100
         proficiencia_por_tabuada[t] = round(proficiencia_percentual, 1)
     return proficiencia_por_tabuada
 
 inicializar_multiplicacoes()
 
-# --- Constantes de UI ---
+# --- Temas e Gerenciamento de Tema ---
+TEMAS = {
+    "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100},
+    "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100},
+    "escuro": {"fundo_pagina": ft.Colors.with_opacity(0.95, ft.Colors.BLACK), "texto_titulos": ft.Colors.PURPLE_ACCENT_100, "texto_padrao": ft.Colors.WHITE70, "botao_principal_bg": ft.Colors.PURPLE_ACCENT_200, "botao_principal_texto": ft.Colors.BLACK, "botao_opcao_quiz_bg": ft.Colors.BLUE_GREY_700, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400, "botao_destaque_texto": ft.Colors.WHITE, "feedback_acerto_texto": ft.Colors.LIGHT_GREEN_ACCENT_400, "feedback_erro_texto": ft.Colors.RED_ACCENT_100, "feedback_acerto_botao_bg": ft.Colors.with_opacity(0.2, ft.Colors.LIGHT_GREEN_ACCENT_400), "feedback_erro_botao_bg": ft.Colors.with_opacity(0.2, ft.Colors.RED_ACCENT_100), "container_treino_bg": ft.Colors.BLUE_GREY_800, "container_treino_borda": ft.Colors.PURPLE_ACCENT_200, "progressbar_cor": ft.Colors.PURPLE_ACCENT_200, "progressbar_bg_cor": ft.Colors.BLUE_GREY_600}
+}
+tema_ativo_nome = "colorido"
+def obter_cor_do_tema_ativo(nome_cor_semantica: str):
+    tema_atual = TEMAS.get(tema_ativo_nome, TEMAS["colorido"]) # Fallback para tema "colorido"
+    return tema_atual.get(nome_cor_semantica, ft.Colors.BLACK) # Fallback para cor preta
+
+# --- Constantes de UI (Dimensões e Animações) ---
 BOTAO_LARGURA_PRINCIPAL = 220
 BOTAO_ALTURA_PRINCIPAL = 50
 BOTAO_LARGURA_OPCAO_QUIZ = 150
 BOTAO_ALTURA_OPCAO_QUIZ = 50
 PADDING_VIEW = padding.symmetric(horizontal=25, vertical=20)
-ESPACAMENTO_COLUNA_GERAL = 15 # Reduzido para acomodar mais botões na tela inicial
+ESPACAMENTO_COLUNA_GERAL = 15
 ESPACAMENTO_BOTOES_APRESENTACAO = 10
-
-COR_ROXO_PRINCIPAL = ft.Colors.DEEP_PURPLE_400
-COR_ROXO_ESCURO_TEXTO = ft.Colors.DEEP_PURPLE_700
-COR_AZUL_BOTAO_OPCAO = ft.Colors.BLUE_300
-COR_ROSA_DESTAQUE = ft.Colors.PINK_ACCENT_200
-COR_VERDE_ACERTO = ft.Colors.GREEN_600
-COR_VERMELHO_ERRO = ft.Colors.RED_500
-COR_TEXTO_SOBRE_ROXO = ft.Colors.WHITE
-COR_TEXTO_SOBRE_AZUL = ft.Colors.WHITE
-COR_TEXTO_SOBRE_ROSA = ft.Colors.BLACK87
-COR_TEXTO_PADRAO_ESCURO = ft.Colors.BLACK87
-COR_TEXTO_TITULOS = COR_ROXO_ESCURO_TEXTO
-COR_FUNDO_PAGINA = ft.Colors.PURPLE_50
-COR_FUNDO_CONTAINER_TREINO = ft.Colors.WHITE
-COR_BORDA_CONTAINER_TREINO = COR_ROXO_PRINCIPAL
-COR_BOTAO_FEEDBACK_ACERTO_BG = ft.Colors.GREEN_100
-COR_BOTAO_FEEDBACK_ERRO_BG = ft.Colors.RED_100
-
 ANIMACAO_FADE_IN_LENTO = Animation(400, AnimationCurve.EASE_IN)
 ANIMACAO_APARICAO_TEXTO_BOTAO = Animation(250, AnimationCurve.EASE_OUT)
 ANIMACAO_FEEDBACK_OPACIDADE = Animation(200, AnimationCurve.EASE_IN_OUT)
 ANIMACAO_FEEDBACK_ESCALA = Animation(300, AnimationCurve.EASE_OUT_BACK)
 
 # --- Funções de Construção de Tela ---
+def mudar_tema(page: Page, novo_tema_nome: str):
+    global tema_ativo_nome
+    tema_ativo_nome = novo_tema_nome
+    if page.client_storage:
+        page.client_storage.set("tema_preferido_quiz_tabuada", novo_tema_nome)
+
+    # Atualizar cores que dependem do tema diretamente na page
+    # page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina") - Isso será feito no route_change
+
+    # Forçar reconstrução da view atual para aplicar o novo tema
+    current_route = page.route
+    # page.views.clear() # Limpar views é feito pelo route_change ao chamar page.go
+    page.go(current_route)
+
 def build_tela_apresentacao(page: Page):
+    controles_botoes_tema = [
+        Text("Escolha um Tema:", size=16, color=obter_cor_do_tema_ativo("texto_padrao")),
+        Container(height=5),
+        Row(
+            [
+                ElevatedButton(text="Colorido", on_click=lambda _: mudar_tema(page, "colorido"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
+                ElevatedButton(text="Claro", on_click=lambda _: mudar_tema(page, "claro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
+                ElevatedButton(text="Escuro", on_click=lambda _: mudar_tema(page, "escuro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
+            ],
+            alignment=MainAxisAlignment.CENTER,
+            spacing = 10
+        )
+    ]
     conteudo_apresentacao = Column(
         controls=[
-            Text("Quiz Mestre da Tabuada", size=32, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=COR_TEXTO_TITULOS),
-            Text("Aprenda e memorize a tabuada de forma divertida e adaptativa!", size=18, text_align=TextAlign.CENTER, color=COR_TEXTO_PADRAO_ESCURO),
+            Text("Quiz Mestre da Tabuada", size=32, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos")),
+            Text("Aprenda e memorize a tabuada de forma divertida e adaptativa!", size=18, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_padrao")),
             Container(height=20),
-            ElevatedButton("Iniciar Quiz", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/quiz"), tooltip="Começar um novo quiz com perguntas aleatórias.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO),
+            ElevatedButton("Iniciar Quiz", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/quiz"), tooltip="Começar um novo quiz.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")),
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
-            ElevatedButton("Quiz Invertido", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/quiz_invertido"), tooltip="Descubra qual multiplicação resulta no número dado.", bgcolor=COR_ROSA_DESTAQUE, color=COR_TEXTO_SOBRE_ROSA),
+            ElevatedButton("Quiz Invertido", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/quiz_invertido"), tooltip="Qual multiplicação resulta no número?", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
-            ElevatedButton("Modo Treino", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/treino"), tooltip="Treinar uma tabuada específica ou uma sugerida.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO),
+            ElevatedButton("Modo Treino", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/treino"), tooltip="Treinar uma tabuada.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")),
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
-            ElevatedButton("Estatísticas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/estatisticas"), tooltip="Veja seu progresso e dificuldades.", bgcolor=COR_AZUL_BOTAO_OPCAO, color=COR_TEXTO_SOBRE_AZUL),
-        ],
-        alignment=MainAxisAlignment.CENTER,
-        horizontal_alignment=CrossAxisAlignment.CENTER,
-        spacing=ESPACAMENTO_COLUNA_GERAL
+            ElevatedButton("Estatísticas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/estatisticas"), tooltip="Veja seu progresso.", bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")), # Usando cor de opção de quiz para variar
+            Container(height=20, margin=Margin(top=10)),
+        ] + controles_botoes_tema,
+        alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL
     )
     return Container(content=conteudo_apresentacao, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
 
 def build_tela_quiz(page: Page):
-    # ... (código da tela de quiz normal, sem alterações nesta etapa) ...
-    texto_pergunta = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=COR_TEXTO_TITULOS, opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
+    texto_pergunta = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"), opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
     botoes_opcoes = [ElevatedButton(width=BOTAO_LARGURA_OPCAO_QUIZ, height=BOTAO_ALTURA_OPCAO_QUIZ, opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO) for _ in range(4)]
     texto_feedback = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, opacity=0, scale=0.8, animate_opacity=ANIMACAO_FEEDBACK_OPACIDADE, animate_scale=ANIMACAO_FEEDBACK_ESCALA)
     def handle_resposta(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref):
@@ -295,228 +254,172 @@ def build_tela_quiz(page: Page):
         registrar_resposta(pergunta_original_ref, era_correta)
         if era_correta:
             txt_feedback_ctrl_ref.value = "Correto!"
-            txt_feedback_ctrl_ref.color = COR_VERDE_ACERTO
-            botao_clicado_ref.bgcolor = COR_BOTAO_FEEDBACK_ACERTO_BG
+            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
+            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_acerto_botao_bg")
         else:
             resposta_certa_valor = pergunta_original_ref['fator1'] * pergunta_original_ref['fator2']
             txt_feedback_ctrl_ref.value = f"Errado! A resposta era {resposta_certa_valor}"
-            txt_feedback_ctrl_ref.color = COR_VERMELHO_ERRO
-            botao_clicado_ref.bgcolor = COR_BOTAO_FEEDBACK_ERRO_BG
+            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_erro_botao_bg")
         for btn in todos_botoes_opcoes_ref: btn.disabled = True
-        txt_feedback_ctrl_ref.opacity = 1
-        txt_feedback_ctrl_ref.scale = 1
-        btn_proxima_ctrl_ref.visible = True
-        page.update()
-    botao_proxima = ElevatedButton("Próxima Pergunta", on_click=None, visible=False, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Carregar a próxima pergunta do quiz.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO)
-    def carregar_nova_pergunta(page_ref, txt_pergunta_ctrl_ref, btn_opcoes_ctrls_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref):
-        txt_feedback_ctrl_ref.opacity = 0
-        txt_feedback_ctrl_ref.scale = 0.8
-        txt_pergunta_ctrl_ref.opacity = 0
-        for btn_opcao in btn_opcoes_ctrls_ref: btn_opcao.opacity = 0
-        pergunta_selecionada = selecionar_proxima_pergunta()
-        if not pergunta_selecionada:
-            txt_pergunta_ctrl_ref.value = "Nenhuma pergunta disponível."
-            txt_pergunta_ctrl_ref.opacity = 1
-            for btn in btn_opcoes_ctrls_ref: btn.visible = False
-            txt_feedback_ctrl_ref.value = ""
-            btn_proxima_ctrl_ref.visible = False
-            page_ref.update()
-            return
-        resposta_correta_valor = pergunta_selecionada['fator1'] * pergunta_selecionada['fator2']
-        opcoes_geradas = gerar_opcoes(pergunta_selecionada['fator1'], pergunta_selecionada['fator2'], multiplicacoes_data)
-        txt_pergunta_ctrl_ref.value = f"{pergunta_selecionada['fator1']} x {pergunta_selecionada['fator2']} = ?"
-        for i in range(4):
-            btn_opcoes_ctrls_ref[i].text = str(opcoes_geradas[i])
-            btn_opcoes_ctrls_ref[i].data = {'opcao': opcoes_geradas[i], 'correta': opcoes_geradas[i] == resposta_correta_valor, 'pergunta_original': pergunta_selecionada}
-            current_button = btn_opcoes_ctrls_ref[i]
-            btn_opcoes_ctrls_ref[i].on_click = lambda e, btn=current_button: handle_resposta(page_ref, btn, btn_opcoes_ctrls_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref)
-            btn_opcoes_ctrls_ref[i].bgcolor = COR_AZUL_BOTAO_OPCAO
-            btn_opcoes_ctrls_ref[i].color = COR_TEXTO_SOBRE_AZUL
-            btn_opcoes_ctrls_ref[i].disabled = False
-            btn_opcoes_ctrls_ref[i].visible = True
-        txt_feedback_ctrl_ref.value = ""
-        btn_proxima_ctrl_ref.visible = False
-        txt_pergunta_ctrl_ref.opacity = 1
-        for btn_opcao in btn_opcoes_ctrls_ref: btn_opcao.opacity = 1
-        page_ref.update()
-    botao_proxima.on_click = lambda _: carregar_nova_pergunta(page, texto_pergunta, botoes_opcoes, texto_feedback, botao_proxima)
-    carregar_nova_pergunta(page, texto_pergunta, botoes_opcoes, texto_feedback, botao_proxima)
-    botao_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO)
-    layout_botoes_opcoes = Column([Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
-    conteudo_quiz = Column(controls=[texto_pergunta, Container(height=15), layout_botoes_opcoes, Container(height=15), texto_feedback, Container(height=20), botao_proxima, Container(height=10), botao_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
-    return Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
-
-def build_tela_quiz_invertido(page: Page):
-    texto_pergunta_invertida = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=COR_TEXTO_TITULOS, opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
-    botoes_opcoes_invertidas = [ElevatedButton(width=BOTAO_LARGURA_OPCAO_QUIZ, height=BOTAO_ALTURA_OPCAO_QUIZ, opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO) for _ in range(4)]
-    texto_feedback_invertido = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, opacity=0, scale=0.8, animate_opacity=ANIMACAO_FEEDBACK_OPACIDADE, animate_scale=ANIMACAO_FEEDBACK_ESCALA)
-
-    def handle_resposta_invertida(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref):
-        dados_botao = botao_clicado_ref.data
-        opcao_selecionada_obj = dados_botao['opcao_obj']
-        era_correta = opcao_selecionada_obj['is_correct']
-        # No quiz invertido, a "pergunta original" que deve ter seu peso atualizado é a que foi usada para gerar o resultado (a opção correta).
-        # Se o usuário escolheu a opção correta, `opcao_selecionada_obj['original_ref']` é a referência certa.
-        # Se o usuário escolheu uma incorreta, `opcao_selecionada_obj['original_ref']` é a referência da multiplicação incorreta.
-        # No entanto, o aprendizado deve ser sobre a multiplicação que gerou o resultado alvo.
-        # Então, `pergunta_base_original_ref` (que é a multiplicação correta que gerou o resultado) é o que deve ser atualizado.
-        pergunta_base_ref = dados_botao['pergunta_base_original_ref']
-
-        registrar_resposta(pergunta_base_ref, era_correta)
-
-        if era_correta:
-            txt_feedback_ctrl_ref.value = "Correto!"
-            txt_feedback_ctrl_ref.color = COR_VERDE_ACERTO
-            botao_clicado_ref.bgcolor = COR_BOTAO_FEEDBACK_ACERTO_BG
-        else:
-            resposta_correta_texto = f"{pergunta_base_ref['fator1']} x {pergunta_base_ref['fator2']}"
-            txt_feedback_ctrl_ref.value = f"Errado! A resposta era {resposta_correta_texto}"
-            txt_feedback_ctrl_ref.color = COR_VERMELHO_ERRO
-            botao_clicado_ref.bgcolor = COR_BOTAO_FEEDBACK_ERRO_BG
-            # Destacar a opção correta
-            for btn_opcao in todos_botoes_opcoes_ref:
-                if btn_opcao.data['opcao_obj']['is_correct']:
-                    btn_opcao.bgcolor = COR_BOTAO_FEEDBACK_ACERTO_BG # Mostra qual era a certa
-                    break
-
-        for btn in todos_botoes_opcoes_ref: btn.disabled = True
-        txt_feedback_ctrl_ref.opacity = 1
-        txt_feedback_ctrl_ref.scale = 1
-        btn_proxima_ctrl_ref.visible = True
-        page.update()
-
-    botao_proxima_invertido = ElevatedButton("Próxima Pergunta", on_click=None, visible=False, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Carregar a próxima pergunta do quiz invertido.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO)
-
-    def carregar_nova_pergunta_invertida(page_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl):
-        txt_feedback_ctrl.opacity = 0
-        txt_feedback_ctrl.scale = 0.8
+        txt_feedback_ctrl_ref.opacity = 1; txt_feedback_ctrl_ref.scale = 1
+        btn_proxima_ctrl_ref.visible = True; page.update()
+    botao_proxima = ElevatedButton("Próxima Pergunta", on_click=None, visible=False, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Carregar próxima pergunta.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    def carregar_nova_pergunta(page_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl):
+        txt_feedback_ctrl.opacity = 0; txt_feedback_ctrl.scale = 0.8
         txt_pergunta_ctrl.opacity = 0
         for btn_opcao in btn_opcoes_ctrls: btn_opcao.opacity = 0
-
-        multiplicacao_selecionada_base = selecionar_proxima_pergunta()
-        if not multiplicacao_selecionada_base:
-            txt_pergunta_ctrl.value = "Nenhuma pergunta base disponível."
-            txt_pergunta_ctrl.opacity = 1
+        pergunta_selecionada = selecionar_proxima_pergunta()
+        if not pergunta_selecionada:
+            txt_pergunta_ctrl.value = "Nenhuma pergunta disponível."; txt_pergunta_ctrl.opacity = 1
             for btn in btn_opcoes_ctrls: btn.visible = False
-            txt_feedback_ctrl.value = ""
-            btn_proxima_ctrl.visible = False
-            page_ref.update()
-            return
-
-        resultado_para_exibir = multiplicacao_selecionada_base['fator1'] * multiplicacao_selecionada_base['fator2']
-        txt_pergunta_ctrl.value = f"Qual operação resulta em {resultado_para_exibir}?"
-
-        opcoes_objs = gerar_opcoes_quiz_invertido(multiplicacao_selecionada_base, multiplicacoes_data)
-
-        for i in range(len(opcoes_objs)): # Usar len(opcoes_objs) que deve ser 4
-            btn_opcoes_ctrls[i].text = opcoes_objs[i]['texto']
-            # Armazena o objeto da opção e também a referência da pergunta base (a correta que gerou o resultado)
-            btn_opcoes_ctrls[i].data = {'opcao_obj': opcoes_objs[i], 'pergunta_base_original_ref': multiplicacao_selecionada_base}
-            current_button = btn_opcoes_ctrls[i]
-            btn_opcoes_ctrls[i].on_click = lambda e, btn=current_button: handle_resposta_invertida(page_ref, btn, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl)
-            btn_opcoes_ctrls[i].bgcolor = COR_AZUL_BOTAO_OPCAO
-            btn_opcoes_ctrls[i].color = COR_TEXTO_SOBRE_AZUL
-            btn_opcoes_ctrls[i].disabled = False
-            btn_opcoes_ctrls[i].visible = True
-
-        txt_feedback_ctrl.value = ""
-        btn_proxima_ctrl.visible = False
+            txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False; page_ref.update(); return
+        r_val = pergunta_selecionada['fator1'] * pergunta_selecionada['fator2']
+        ops = gerar_opcoes(pergunta_selecionada['fator1'], pergunta_selecionada['fator2'], multiplicacoes_data)
+        txt_pergunta_ctrl.value = f"{pergunta_selecionada['fator1']} x {pergunta_selecionada['fator2']} = ?"
+        for i in range(4):
+            btn_opcoes_ctrls[i].text = str(ops[i])
+            btn_opcoes_ctrls[i].data = {'opcao': ops[i], 'correta': ops[i] == r_val, 'pergunta_original': pergunta_selecionada}
+            btn_opcoes_ctrls[i].on_click = lambda e, btn=btn_opcoes_ctrls[i]: handle_resposta(page_ref, btn, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl)
+            btn_opcoes_ctrls[i].bgcolor = obter_cor_do_tema_ativo("botao_opcao_quiz_bg")
+            btn_opcoes_ctrls[i].color = obter_cor_do_tema_ativo("botao_opcao_quiz_texto")
+            btn_opcoes_ctrls[i].disabled = False; btn_opcoes_ctrls[i].visible = True
+        txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
         txt_pergunta_ctrl.opacity = 1
         for btn_opcao in btn_opcoes_ctrls: btn_opcao.opacity = 1
         page_ref.update()
+    botao_proxima.on_click = lambda _: carregar_nova_pergunta(page, texto_pergunta, botoes_opcoes, texto_feedback, botao_proxima)
+    carregar_nova_pergunta(page, texto_pergunta, botoes_opcoes, texto_feedback, botao_proxima)
+    botao_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    layout_botoes = Column([Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
+    conteudo_quiz = Column([texto_pergunta, Container(height=15), layout_botoes, Container(height=15), texto_feedback, Container(height=20), botao_proxima, Container(height=10), botao_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
+    return Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
 
+def build_tela_quiz_invertido(page: Page):
+    texto_pergunta_invertida = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"), opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
+    botoes_opcoes_invertidas = [ElevatedButton(width=BOTAO_LARGURA_OPCAO_QUIZ, height=BOTAO_ALTURA_OPCAO_QUIZ, opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO) for _ in range(4)]
+    texto_feedback_invertido = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, opacity=0, scale=0.8, animate_opacity=ANIMACAO_FEEDBACK_OPACIDADE, animate_scale=ANIMACAO_FEEDBACK_ESCALA)
+    def handle_resposta_invertida(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref):
+        dados_botao = botao_clicado_ref.data
+        opcao_obj = dados_botao['opcao_obj']
+        era_correta = opcao_obj['is_correct']
+        pergunta_base_ref = dados_botao['pergunta_base_original_ref']
+        registrar_resposta(pergunta_base_ref, era_correta)
+        if era_correta:
+            txt_feedback_ctrl_ref.value = "Correto!"
+            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
+            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_acerto_botao_bg")
+        else:
+            resp_correta_txt = f"{pergunta_base_ref['fator1']} x {pergunta_base_ref['fator2']}"
+            txt_feedback_ctrl_ref.value = f"Errado! A resposta era {resp_correta_txt}"
+            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_erro_botao_bg")
+            for btn_op in todos_botoes_opcoes_ref:
+                if btn_op.data['opcao_obj']['is_correct']: btn_op.bgcolor = obter_cor_do_tema_ativo("feedback_acerto_botao_bg"); break
+        for btn in todos_botoes_opcoes_ref: btn.disabled = True
+        txt_feedback_ctrl_ref.opacity = 1; txt_feedback_ctrl_ref.scale = 1
+        btn_proxima_ctrl_ref.visible = True; page.update()
+    botao_proxima_invertido = ElevatedButton("Próxima Pergunta", on_click=None, visible=False, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Carregar próxima pergunta.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    def carregar_nova_pergunta_invertida(page_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl):
+        txt_feedback_ctrl.opacity = 0; txt_feedback_ctrl.scale = 0.8
+        txt_pergunta_ctrl.opacity = 0
+        for btn_opcao in btn_opcoes_ctrls: btn_opcao.opacity = 0
+        multiplicacao_base = selecionar_proxima_pergunta()
+        if not multiplicacao_base:
+            txt_pergunta_ctrl.value = "Nenhuma pergunta base disponível."; txt_pergunta_ctrl.opacity = 1
+            for btn in btn_opcoes_ctrls: btn.visible = False
+            txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False; page_ref.update(); return
+        resultado_alvo = multiplicacao_base['fator1'] * multiplicacao_base['fator2']
+        txt_pergunta_ctrl.value = f"Qual operação resulta em {resultado_alvo}?"
+        opcoes_objs_geradas = gerar_opcoes_quiz_invertido(multiplicacao_base, multiplicacoes_data)
+        for i in range(len(opcoes_objs_geradas)):
+            btn_opcoes_ctrls[i].text = opcoes_objs_geradas[i]['texto']
+            btn_opcoes_ctrls[i].data = {'opcao_obj': opcoes_objs_geradas[i], 'pergunta_base_original_ref': multiplicacao_base}
+            btn_opcoes_ctrls[i].on_click = lambda e, btn=btn_opcoes_ctrls[i]: handle_resposta_invertida(page_ref, btn, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl)
+            btn_opcoes_ctrls[i].bgcolor = obter_cor_do_tema_ativo("botao_opcao_quiz_bg")
+            btn_opcoes_ctrls[i].color = obter_cor_do_tema_ativo("botao_opcao_quiz_texto")
+            btn_opcoes_ctrls[i].disabled = False; btn_opcoes_ctrls[i].visible = True
+        txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
+        txt_pergunta_ctrl.opacity = 1
+        for btn_opcao in btn_opcoes_ctrls: btn_opcao.opacity = 1
+        page_ref.update()
     botao_proxima_invertido.on_click = lambda _: carregar_nova_pergunta_invertida(page, texto_pergunta_invertida, botoes_opcoes_invertidas, texto_feedback_invertido, botao_proxima_invertido)
     carregar_nova_pergunta_invertida(page, texto_pergunta_invertida, botoes_opcoes_invertidas, texto_feedback_invertido, botao_proxima_invertido)
-
-    botao_voltar_menu_invertido = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO)
-    layout_botoes_opcoes_inv = Column([Row(botoes_opcoes_invertidas[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes_invertidas[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
-
-    conteudo_quiz_invertido = Column(
-        controls=[
-            texto_pergunta_invertida, Container(height=15),
-            layout_botoes_opcoes_inv, Container(height=15),
-            texto_feedback_invertido, Container(height=20),
-            botao_proxima_invertido, Container(height=10),
-            botao_voltar_menu_invertido
-        ],
-        alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER,
-        spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO
-    )
-    return Container(content=conteudo_quiz_invertido, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
-
+    botao_voltar_inv = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    layout_botoes_inv = Column([Row(botoes_opcoes_invertidas[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes_invertidas[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
+    conteudo_quiz_inv = Column([texto_pergunta_invertida, Container(height=15), layout_botoes_inv, Container(height=15), texto_feedback_invertido, Container(height=20), botao_proxima_invertido, Container(height=10), botao_voltar_inv], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
+    return Container(content=conteudo_quiz_inv, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
 
 def build_tela_treino(page: Page):
-    # ... (código da tela de treino permanece o mesmo) ...
     tabuada_sugerida = sugerir_tabuada_para_treino()
-    titulo_treino = Text(f"Treinando a Tabuada do {tabuada_sugerida}", size=28, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=COR_TEXTO_TITULOS)
+    titulo_treino = Text(f"Treinando a Tabuada do {tabuada_sugerida}", size=28, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"))
     campos_tabuada_refs = []
     coluna_itens_tabuada = Column(spacing=10, scroll=ScrollMode.AUTO, expand=True, horizontal_alignment=CrossAxisAlignment.CENTER)
     for i in range(1, 11):
-        resposta_correta_val = tabuada_sugerida * i
-        texto_multiplicacao = Text(f"{tabuada_sugerida} x {i} = ", size=18, color=COR_TEXTO_PADRAO_ESCURO)
-        campo_resposta = TextField(width=100, text_align=TextAlign.CENTER, data={'fator1': tabuada_sugerida, 'fator2': i, 'resposta_correta': resposta_correta_val}, keyboard_type=KeyboardType.NUMBER)
-        campos_tabuada_refs.append(campo_resposta)
-        coluna_itens_tabuada.controls.append(Row([texto_multiplicacao, campo_resposta], alignment=MainAxisAlignment.CENTER, spacing=10))
-    texto_resumo_treino = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=COR_TEXTO_PADRAO_ESCURO)
-    botao_verificar = ElevatedButton("Verificar Respostas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Corrigir as respostas da tabuada.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO)
+        r_correta_val = tabuada_sugerida * i
+        txt_mult = Text(f"{tabuada_sugerida} x {i} = ", size=18, color=obter_cor_do_tema_ativo("texto_padrao"))
+        campo_resp = TextField(width=100, text_align=TextAlign.CENTER, data={'fator1': tabuada_sugerida, 'fator2': i, 'resposta_correta': r_correta_val}, keyboard_type=KeyboardType.NUMBER)
+        campos_tabuada_refs.append(campo_resp)
+        coluna_itens_tabuada.controls.append(Row([txt_mult, campo_resp], alignment=MainAxisAlignment.CENTER, spacing=10))
+    txt_resumo = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_padrao"))
+    btn_verificar = ElevatedButton("Verificar Respostas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Corrigir respostas.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     def handle_verificar_treino(e):
         acertos = 0
-        total_questoes = len(campos_tabuada_refs)
         for campo in campos_tabuada_refs:
-            dados_campo = campo.data
-            fator1, fator2, resposta_correta_esperada = dados_campo['fator1'], dados_campo['fator2'], dados_campo['resposta_correta']
-            resposta_usuario_str = campo.value
-            acertou_questao = False
+            dados = campo.data
+            f1, f2, resp_esperada = dados['fator1'], dados['fator2'], dados['resposta_correta']
+            acertou = False
             try:
-                resposta_usuario_int = int(resposta_usuario_str)
-                if resposta_usuario_int == resposta_correta_esperada:
-                    acertos += 1
-                    acertou_questao = True
-                    campo.border_color = COR_VERDE_ACERTO
-                else:
-                    campo.border_color = COR_VERMELHO_ERRO
-            except ValueError:
-                campo.border_color = COR_VERMELHO_ERRO
+                if int(campo.value) == resp_esperada: acertos += 1; acertou = True; campo.border_color = obter_cor_do_tema_ativo("feedback_acerto_texto")
+                else: campo.border_color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            except ValueError: campo.border_color = obter_cor_do_tema_ativo("feedback_erro_texto")
             campo.disabled = True
-            pergunta_ref = next((p for p in multiplicacoes_data if (p['fator1'] == fator1 and p['fator2'] == fator2) or (p['fator1'] == fator2 and p['fator2'] == fator1)), None)
-            if pergunta_ref:
-                registrar_resposta(pergunta_ref, acertou_questao)
-        texto_resumo_treino.value = f"Você acertou {acertos} de {total_questoes}!"
-        botao_verificar.disabled = True
-        page.update()
-    botao_verificar.on_click = handle_verificar_treino
-    botao_voltar_menu = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO)
-    container_tabuada = Container(content=coluna_itens_tabuada, border=border.all(2, COR_BORDA_CONTAINER_TREINO), border_radius=8, padding=padding.all(15), width=360, height=420, bgcolor=COR_FUNDO_CONTAINER_TREINO)
-    conteudo_treino = Column(controls=[titulo_treino, Container(height=10), container_tabuada, Container(height=10), botao_verificar, Container(height=10), texto_resumo_treino, Container(height=15), botao_voltar_menu], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
+            pergunta_ref = next((p for p in multiplicacoes_data if (p['fator1'] == f1 and p['fator2'] == f2) or (p['fator1'] == f2 and p['fator2'] == f1)), None)
+            if pergunta_ref: registrar_resposta(pergunta_ref, acertou)
+        txt_resumo.value = f"Você acertou {acertos} de {len(campos_tabuada_refs)}!"; btn_verificar.disabled = True; page.update()
+    btn_verificar.on_click = handle_verificar_treino
+    btn_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    cont_tabuada = Container(content=coluna_itens_tabuada, border=border.all(2, obter_cor_do_tema_ativo("container_treino_borda")), border_radius=8, padding=padding.all(15), width=360, height=420, bgcolor=obter_cor_do_tema_ativo("container_treino_bg"))
+    conteudo_treino = Column([titulo_treino, Container(height=10), cont_tabuada, Container(height=10), btn_verificar, Container(height=10), txt_resumo, Container(height=15), btn_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
     return Container(content=conteudo_treino, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
 
 def build_tela_estatisticas(page: Page):
-    # ... (código da tela de estatísticas permanece o mesmo) ...
     stats_gerais = calcular_estatisticas_gerais()
     proficiencia_tabuadas = calcular_proficiencia_tabuadas()
     lista_proficiencia_controls = []
     for t in range(1, 11):
         progresso = proficiencia_tabuadas.get(t, 0) / 100.0
-        cor_barra = COR_VERDE_ACERTO if progresso >= 0.7 else (COR_ROXO_PRINCIPAL if progresso >= 0.4 else COR_VERMELHO_ERRO)
-        lista_proficiencia_controls.append(Row([Text(f"Tabuada do {t}: ", size=16, color=COR_TEXTO_PADRAO_ESCURO, width=130), ProgressBar(value=progresso, width=150, color=cor_barra, bgcolor=ft.Colors.with_opacity(0.2, cor_barra)), Text(f"{proficiencia_tabuadas.get(t, 0):.1f}%", size=16, color=COR_TEXTO_PADRAO_ESCURO, width=60, text_align=TextAlign.RIGHT)], alignment=MainAxisAlignment.CENTER))
-    coluna_proficiencia = Column(controls=lista_proficiencia_controls, spacing=8, horizontal_alignment=CrossAxisAlignment.CENTER)
-    top_3_texts = [Text(item, size=16, color=COR_TEXTO_PADRAO_ESCURO) for item in stats_gerais['top_3_dificeis']]
-    if not top_3_texts: top_3_texts = [Text("Nenhuma dificuldade registrada ainda!", size=16, color=COR_TEXTO_PADRAO_ESCURO)]
-    coluna_dificuldades = Column(controls=top_3_texts, spacing=5, horizontal_alignment=CrossAxisAlignment.CENTER)
-    conteudo_estatisticas = Column(controls=[Text("Suas Estatísticas", size=32, weight=FontWeight.BOLD, color=COR_TEXTO_TITULOS, text_align=TextAlign.CENTER), Container(height=15), Text(f"Total de Perguntas Respondidas: {stats_gerais['total_respondidas']}", size=18, color=COR_TEXTO_PADRAO_ESCURO), Text(f"Percentual de Acertos Geral: {stats_gerais['percentual_acertos_geral']:.1f}%", size=18, color=COR_TEXTO_PADRAO_ESCURO), Container(height=10), Text("Proficiência por Tabuada:", size=22, weight=FontWeight.SEMI_BOLD, color=COR_TEXTO_TITULOS, margin=Margin(top=20, bottom=10)), coluna_proficiencia, Container(height=10), Text("Maiores Dificuldades Atuais:", size=22, weight=FontWeight.SEMI_BOLD, color=COR_TEXTO_TITULOS, margin=Margin(top=20, bottom=10)), coluna_dificuldades, Container(height=25), ElevatedButton("Voltar ao Menu", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/"), tooltip="Retornar à tela inicial.", bgcolor=COR_ROXO_PRINCIPAL, color=COR_TEXTO_SOBRE_ROXO)], scroll=ScrollMode.AUTO, alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL)
-    return Container(content=conteudo_estatisticas, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+        cor_barra_semantica = "feedback_acerto_texto"
+        if progresso < 0.4: cor_barra_semantica = "feedback_erro_texto"
+        elif progresso < 0.7: cor_barra_semantica = "progressbar_cor"
+        cor_barra_dinamica = obter_cor_do_tema_ativo(cor_barra_semantica)
+        progressbar_bg_color_dinamica = obter_cor_do_tema_ativo("progressbar_bg_cor")
+        lista_proficiencia_controls.append(Row([Text(f"Tabuada do {t}: ", size=16, color=obter_cor_do_tema_ativo("texto_padrao"), width=130), ProgressBar(value=progresso, width=150, color=cor_barra_dinamica, bgcolor=progressbar_bg_color_dinamica), Text(f"{proficiencia_tabuadas.get(t, 0):.1f}%", size=16, color=obter_cor_do_tema_ativo("texto_padrao"), width=60, text_align=TextAlign.RIGHT)], alignment=MainAxisAlignment.CENTER))
+    col_prof = Column(controls=lista_proficiencia_controls, spacing=8, horizontal_alignment=CrossAxisAlignment.CENTER)
+    top_3_txt = [Text(item, size=16, color=obter_cor_do_tema_ativo("texto_padrao")) for item in stats_gerais['top_3_dificeis']]
+    if not top_3_txt: top_3_txt = [Text("Nenhuma dificuldade registrada ainda!", size=16, color=obter_cor_do_tema_ativo("texto_padrao"))]
+    col_dificuldades = Column(controls=top_3_txt, spacing=5, horizontal_alignment=CrossAxisAlignment.CENTER)
+    conteudo_stats = Column(controls=[Text("Suas Estatísticas", size=32, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), text_align=TextAlign.CENTER), Container(height=15), Text(f"Total de Perguntas Respondidas: {stats_gerais['total_respondidas']}", size=18, color=obter_cor_do_tema_ativo("texto_padrao")), Text(f"Percentual de Acertos Geral: {stats_gerais['percentual_acertos_geral']:.1f}%", size=18, color=obter_cor_do_tema_ativo("texto_padrao")), Container(height=10), Text("Proficiência por Tabuada:", size=22, weight=FontWeight.SEMI_BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=Margin(top=20, bottom=10)), col_prof, Container(height=10), Text("Maiores Dificuldades Atuais:", size=22, weight=FontWeight.SEMI_BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), margin=Margin(top=20, bottom=10)), col_dificuldades, Container(height=25), ElevatedButton("Voltar ao Menu", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/"), tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))], scroll=ScrollMode.AUTO, alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL)
+    return Container(content=conteudo_stats, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
 
 # --- Configuração Principal da Página e Rotas ---
 def main(page: Page):
+    global tema_ativo_nome
+    if page.client_storage:
+        tema_salvo = page.client_storage.get("tema_preferido_quiz_tabuada")
+        if tema_salvo and tema_salvo in TEMAS:
+            tema_ativo_nome = tema_salvo
+
     page.title = "Quiz Mestre da Tabuada"
     page.vertical_alignment = MainAxisAlignment.CENTER
     page.horizontal_alignment = CrossAxisAlignment.CENTER
-    page.bgcolor = COR_FUNDO_PAGINA
+    page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
     page.window_width = 480
     page.window_height = 800
     page.fonts = {"RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"}
 
     def route_change(route):
+        page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
         page.views.clear()
         page.views.append(View("/", [build_tela_apresentacao(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
         if page.route == "/quiz":
