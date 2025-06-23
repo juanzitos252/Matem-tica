@@ -32,21 +32,21 @@ def calc_raiz_soma_diferenca(val_a: int, val_b: int) -> int:
 FORMULAS_NOTAVEIS = [
     {
         'id': "quadrado_soma",
-        'display_name': "Quadrado da Soma: (a+b)^2",
+        'display_name': "Quadrado da Soma: (a+b)²",
         'variables': ['a', 'b'],
         'calculation_function': calc_quadrado_soma,
-        'question_template': "Se a={a} e b={b}, qual o valor de (a+b)^2?",
-        'reminder_template': "(x+y)^2 = x^2 + 2xy + y^2",
+        'question_template': "Se a={a} e b={b}, qual o valor de (a+b)²?",
+        'reminder_template': "(x+y)² = x² + 2xy + y²",
         'range_constraints': {},
         'variable_labels': {'a': "Valor de 'a'", 'b': "Valor de 'b'"}
     },
     {
         'id': "quadrado_diferenca",
-        'display_name': "Quadrado da Diferença: (a-b)^2",
+        'display_name': "Quadrado da Diferença: (a-b)²",
         'variables': ['a', 'b'],
         'calculation_function': calc_quadrado_diferenca,
-        'question_template': "Se a={a} e b={b}, qual o valor de (a-b)^2?",
-        'reminder_template': "(x-y)^2 = x^2 - 2xy + y^2",
+        'question_template': "Se a={a} e b={b}, qual o valor de (a-b)²?",
+        'reminder_template': "(x-y)² = x² - 2xy + y²",
         'range_constraints': {},
         'variable_labels': {'a': "Valor de 'a'", 'b': "Valor de 'b'"}
     },
@@ -56,7 +56,7 @@ FORMULAS_NOTAVEIS = [
         'variables': ['a', 'b'],
         'calculation_function': calc_produto_soma_diferenca,
         'question_template': "Se a={a} e b={b}, qual o valor de (a+b)(a-b)?",
-        'reminder_template': "(x+y)(x-y) = x^2 - y^2",
+        'reminder_template': "(x+y)(x-y) = x² - y²",
         'range_constraints': {'b': 'less_than_equal_a'},
         'variable_labels': {'a': "Valor de 'a'", 'b': "Valor de 'b' (b <= a)"}
     },
