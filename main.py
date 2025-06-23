@@ -3,7 +3,7 @@ from flet import (
     Page, Text, ElevatedButton, Row, Column, TextField, View, Container,
     MainAxisAlignment, CrossAxisAlignment, FontWeight, alignment,
     TextAlign, ScrollMode, padding, border, KeyboardType,
-    Animation, AnimationCurve, ProgressBar # Margin removida
+    Animation, AnimationCurve, ProgressBar, Dropdown # Margin removida, Dropdown adicionado
 )
 import random
 import time
