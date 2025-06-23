@@ -237,15 +237,28 @@ def calcular_proficiencia_tabuadas():
     global multiplicacoes_data
     proficiencia_por_tabuada = {i: 0.0 for i in range(1, 11)}
     if not multiplicacoes_data: return proficiencia_por_tabuada
+
     for t in range(1, 11):
-        itens_tabuada_t, vistos_para_tabuada_t = [], set()
+        itens_tabuada_t_apresentados, vistos_para_tabuada_t = [], set()
         for item_p in multiplicacoes_data:
             par_ordenado = tuple(sorted((item_p['fator1'], item_p['fator2'])))
-            if (item_p['fator1'] == t or item_p['fator2'] == t) and par_ordenado not in vistos_para_tabuada_t:
-                itens_tabuada_t.append(item_p); vistos_para_tabuada_t.add(par_ordenado)
-        media_pesos = (sum(it['peso'] for it in itens_tabuada_t) / len(itens_tabuada_t)) if itens_tabuada_t else 100.0
-        proficiencia_percentual = max(0, (100.0 - media_pesos) / (100.0 - 1.0)) * 100.0
-        proficiencia_por_tabuada[t] = round(proficiencia_percentual, 1)
+            # Considerar apenas itens que foram apresentados
+            if (item_p['fator1'] == t or item_p['fator2'] == t) and \
+               par_ordenado not in vistos_para_tabuada_t and \
+               item_p['vezes_apresentada'] > 0:
+                itens_tabuada_t_apresentados.append(item_p)
+                vistos_para_tabuada_t.add(par_ordenado)
+
+        if not itens_tabuada_t_apresentados:
+            # Se nenhum item da tabuada foi apresentado, a proficiência é 0
+            proficiencia_por_tabuada[t] = 0.0
+        else:
+            # Calcular a média dos pesos apenas dos itens apresentados
+            media_pesos = sum(it['peso'] for it in itens_tabuada_t_apresentados) / len(itens_tabuada_t_apresentados)
+            # A fórmula de proficiência permanece a mesma, mas baseada em dados relevantes
+            proficiencia_percentual = max(0, (100.0 - media_pesos) / (100.0 - 1.0)) * 100.0
+            proficiencia_por_tabuada[t] = round(proficiencia_percentual, 1)
+
     return proficiencia_por_tabuada
 
 inicializar_multiplicacoes()
@@ -352,8 +365,8 @@ def mudar_tema(page: Page, novo_tema_nome: str):
         page.views.append(View("/treino", [build_tela_treino(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
     elif current_route_val == "/estatisticas":
         page.views.append(View("/estatisticas", [build_tela_estatisticas(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
-    elif current_route_val == "/custom_formula_setup":
-        page.views.append(View("/custom_formula_setup", [build_tela_custom_formula_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+    elif current_route_val == "/formula_quiz_setup":
+        page.views.append(View("/formula_quiz_setup", [build_tela_formula_quiz_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
     elif current_route_val == "/custom_quiz":
         page.views.append(View("/custom_quiz", [build_tela_custom_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
 
@@ -1262,8 +1275,8 @@ def main(page: Page):
             page.views.append(View("/treino", [build_tela_treino(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
         elif page.route == "/estatisticas":
             page.views.append(View("/estatisticas", [build_tela_estatisticas(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
-        elif page.route == "/custom_formula_setup":
-            page.views.append(View("/custom_formula_setup", [build_tela_custom_formula_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+        elif page.route == "/formula_quiz_setup":
+            page.views.append(View("/formula_quiz_setup", [build_tela_formula_quiz_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
         elif page.route == "/custom_quiz":
             page.views.append(View("/custom_quiz", [build_tela_custom_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
 
