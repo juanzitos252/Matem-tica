@@ -492,18 +492,34 @@ def build_tela_formula_quiz_setup(page: Page):
     var_b_range_field.visible = False
 
 
-    def update_saved_quiz_configs_dropdown():
+    def update_saved_quiz_configs_dropdown(update_control: bool = True):
         # custom_formulas_data agora armazena configurações de quiz notável
-        saved_quiz_configs_dropdown.options = [
+        new_options = [
             ft.dropdown.Option(key=cfg['name'], text=cfg['name']) for cfg in custom_formulas_data
         ]
+        saved_quiz_configs_dropdown.options = new_options
+
         current_selection = saved_quiz_configs_dropdown.value
+        new_selection_made = False
+
         if custom_formulas_data:
-            if not any(opt.key == current_selection for opt in saved_quiz_configs_dropdown.options):
+            # Se a seleção atual não é mais válida ou não existe, seleciona a última adicionada
+            if not any(opt.key == current_selection for opt in new_options):
                 saved_quiz_configs_dropdown.value = custom_formulas_data[-1]['name']
+                new_selection_made = True
         else:
-            saved_quiz_configs_dropdown.value = None
-        saved_quiz_configs_dropdown.update()
+            # Se não há dados, limpa a seleção
+            if saved_quiz_configs_dropdown.value is not None:
+                saved_quiz_configs_dropdown.value = None
+                new_selection_made = True
+
+        # A atualização individual do controle só deve ocorrer se explicitamente solicitada (update_control=True),
+        # o que implica que o controle já está na página.
+        # Definir .options e .value é seguro antes de adicionar à página.
+        # O page.update() ao final da função de build da view renderizará o estado correto.
+        if update_control:
+            saved_quiz_configs_dropdown.update()
+
 
     # Handler para SALVAR uma CONFIGURAÇÃO de quiz com fórmula notável
     # (Adaptado de save_custom_formula_handler)
@@ -555,7 +571,7 @@ def build_tela_formula_quiz_setup(page: Page):
         feedback_text.value = f"Configuração de Quiz '{config_name}' salva!"
         feedback_text.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
 
-        update_saved_quiz_configs_dropdown()
+        update_saved_quiz_configs_dropdown(update_control=True) # Chamada explícita para atualizar após salvar
         quiz_config_name_field.value = ""
         formula_type_dropdown.value = None # Resetar dropdown de tipo
         var_a_range_field.visible = False # Esconder ranges
@@ -586,7 +602,9 @@ def build_tela_formula_quiz_setup(page: Page):
             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
             page.update()
 
-    update_saved_quiz_configs_dropdown() # Atualizar dropdown de configs salvas na carga inicial
+    # Chamada inicial para definir o estado do dropdown, mas sem forçar update individual do controle
+    # A atualização geral da página ao final da construção da view deve refletir o estado.
+    update_saved_quiz_configs_dropdown(update_control=False)
 
     save_button = ElevatedButton("Salvar Configuração do Quiz", on_click=save_quiz_config_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     start_quiz_button = ElevatedButton("Iniciar Quiz com Config. Salva", on_click=start_quiz_with_saved_config_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto"))
