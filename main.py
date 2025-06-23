@@ -178,14 +178,46 @@ current_custom_formula_for_quiz = None # Armazena a fórmula selecionada para o 
 
 # --- Temas e Gerenciamento de Tema ---
 TEMAS = {
-    "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100},
-    "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100},
-    "escuro": {"fundo_pagina": ft.Colors.with_opacity(0.95, ft.Colors.BLACK), "texto_titulos": ft.Colors.PURPLE_ACCENT_100, "texto_padrao": ft.Colors.WHITE70, "botao_principal_bg": ft.Colors.PURPLE_ACCENT_200, "botao_principal_texto": ft.Colors.BLACK, "botao_opcao_quiz_bg": ft.Colors.BLUE_GREY_700, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400, "botao_destaque_texto": ft.Colors.WHITE, "feedback_acerto_texto": ft.Colors.LIGHT_GREEN_ACCENT_400, "feedback_erro_texto": ft.Colors.RED_ACCENT_100, "feedback_acerto_botao_bg": ft.Colors.with_opacity(0.2, ft.Colors.LIGHT_GREEN_ACCENT_400), "feedback_erro_botao_bg": ft.Colors.with_opacity(0.2, ft.Colors.RED_ACCENT_100), "container_treino_bg": ft.Colors.BLUE_GREY_800, "container_treino_borda": ft.Colors.PURPLE_ACCENT_200, "progressbar_cor": ft.Colors.PURPLE_ACCENT_200, "progressbar_bg_cor": ft.Colors.BLUE_GREY_600}
+    "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "botao_tema_bg": ft.Colors.PINK_ACCENT_100, "botao_tema_texto": ft.Colors.BLACK, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "textfield_border_color": ft.Colors.DEEP_PURPLE_400, "dropdown_border_color": ft.Colors.DEEP_PURPLE_400,"progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100},
+    "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "botao_tema_bg": ft.Colors.CYAN_200, "botao_tema_texto": ft.Colors.BLACK87,"feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "textfield_border_color": ft.Colors.BLUE_600, "dropdown_border_color": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100},
+    "escuro_moderno": {
+        "fundo_pagina": ft.colors.TEAL_900, # Fallback for page.bgcolor
+        "gradient_page_bg": ft.LinearGradient(
+            begin=alignment.top_center, # Changed from top_left
+            end=alignment.bottom_center,  # Changed from bottom_right
+            colors=[ft.colors.INDIGO_900, ft.colors.PURPLE_800, ft.colors.TEAL_800], # Slightly adjusted shades for harmony
+            stops=[0.1, 0.6, 1.0]
+        ),
+        "texto_titulos": ft.Colors.CYAN_ACCENT_200,
+        "texto_padrao": ft.Colors.WHITE,
+        "botao_principal_bg": ft.Colors.PINK_ACCENT_400,
+        "botao_principal_texto": ft.Colors.WHITE,
+        "botao_opcao_quiz_bg": ft.Colors.BLUE_GREY_700,
+        "botao_opcao_quiz_texto": ft.Colors.WHITE,
+        "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400,
+        "botao_destaque_texto": ft.Colors.WHITE,
+        "botao_tema_bg": ft.colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
+        "botao_tema_texto": ft.Colors.CYAN_ACCENT_100,                 # For theme selection buttons text
+        "feedback_acerto_texto": ft.Colors.GREEN_ACCENT_200,
+        "feedback_erro_texto": ft.Colors.RED_ACCENT_100,
+        "feedback_acerto_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
+        "feedback_erro_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
+        "container_treino_bg": ft.colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
+        "container_treino_borda": ft.Colors.CYAN_ACCENT_700,
+        "textfield_border_color": ft.Colors.CYAN_ACCENT_700,
+        "dropdown_border_color": ft.Colors.CYAN_ACCENT_700,
+        "progressbar_cor": ft.Colors.CYAN_ACCENT_400,
+        "progressbar_bg_cor": ft.colors.with_opacity(0.2, ft.Colors.WHITE)
+    }
 }
-tema_ativo_nome = "colorido"
-def obter_cor_do_tema_ativo(nome_cor_semantica: str):
+tema_ativo_nome = "colorido" # Default theme
+def obter_cor_do_tema_ativo(nome_cor_semantica: str, fallback_color=ft.Colors.BLACK): # Added fallback_color param
+    # Se o tema ativo for o novo escuro e a cor pedida for 'gradient_page_bg', retorna o objeto Gradient.
+    if tema_ativo_nome == "escuro_moderno" and nome_cor_semantica == "gradient_page_bg":
+        return TEMAS["escuro_moderno"]["gradient_page_bg"]
+
     tema_atual = TEMAS.get(tema_ativo_nome, TEMAS["colorido"])
-    return tema_atual.get(nome_cor_semantica, ft.Colors.BLACK)
+    return tema_atual.get(nome_cor_semantica, fallback_color) # Use provided fallback
 
 # --- Constantes de UI (Dimensões e Animações) ---
 BOTAO_LARGURA_PRINCIPAL = 220
@@ -264,15 +296,15 @@ def parse_variable_ranges(range_str: str, default_min=1, default_max=10):
 
 # --- Tela de Configuração de Fórmula Personalizada ---
 def build_tela_custom_formula_setup(page: Page):
-    nome_formula_field = TextField(label="Nome da Fórmula (Ex: Soma Básica)", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
+    nome_formula_field = TextField(label="Nome da Fórmula (Ex: Soma Básica)", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
     # Exemplo: "a + b = resultado" ou "base * altura / 2 = area_triangulo"
-    base_equation_field = TextField(label="Equação Base (Ex: a + b = c)", hint_text="Define as variáveis e a estrutura.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
+    base_equation_field = TextField(label="Equação Base (Ex: a + b = c)", hint_text="Define as variáveis e a estrutura.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
     # Exemplo: "c = a + b" ou "area_triangulo = base * altura / 2"
-    calculation_formula_field = TextField(label="Fórmula de Cálculo (Ex: c = a + b)", hint_text="Como calcular o resultado.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
+    calculation_formula_field = TextField(label="Fórmula de Cálculo (Ex: c = a + b)", hint_text="Como calcular o resultado.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
 
     # Simplificando para duas variáveis 'a' e 'b' inicialmente
-    var_a_range_field = TextField(label="Range para 'a' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
-    var_b_range_field = TextField(label="Range para 'b' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
+    var_a_range_field = TextField(label="Range para 'a' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
+    var_b_range_field = TextField(label="Range para 'b' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
     # Adicionar mais variáveis dinamicamente seria mais complexo, focando em 'a' e 'b' + resultado por agora.
 
     feedback_text = Text("", color=obter_cor_do_tema_ativo("texto_padrao"))
@@ -357,7 +389,7 @@ def build_tela_custom_formula_setup(page: Page):
         label="Ou selecione uma fórmula salva",
         width=350,
         options=[ft.dropdown.Option(key=f['name'], text=f['name']) for f in custom_formulas_data],
-        border_color=obter_cor_do_tema_ativo("botao_principal_bg"),
+        border_color=obter_cor_do_tema_ativo("dropdown_border_color"),
         color=obter_cor_do_tema_ativo("texto_padrao")
     )
 
@@ -505,7 +537,15 @@ def build_tela_custom_formula_setup(page: Page):
         horizontal_alignment=CrossAxisAlignment.CENTER,
         spacing=ESPACAMENTO_COLUNA_GERAL
     )
-    return Container(content=content, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=content, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 
 def build_tela_apresentacao(page: Page):
@@ -514,9 +554,9 @@ def build_tela_apresentacao(page: Page):
         Container(height=5),
         Row(
             [
-                ElevatedButton(text="Colorido", on_click=lambda _: mudar_tema(page, "colorido"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
-                ElevatedButton(text="Claro", on_click=lambda _: mudar_tema(page, "claro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
-                ElevatedButton(text="Escuro", on_click=lambda _: mudar_tema(page, "escuro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
+                ElevatedButton(text="Colorido", on_click=lambda _: mudar_tema(page, "colorido"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_tema_bg"), color=obter_cor_do_tema_ativo("botao_tema_texto")),
+                ElevatedButton(text="Claro", on_click=lambda _: mudar_tema(page, "claro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_tema_bg"), color=obter_cor_do_tema_ativo("botao_tema_texto")),
+                ElevatedButton(text="Escuro Moderno", on_click=lambda _: mudar_tema(page, "escuro_moderno"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_tema_bg"), color=obter_cor_do_tema_ativo("botao_tema_texto")),
             ],
             alignment=MainAxisAlignment.CENTER,
             spacing = 10
@@ -538,9 +578,26 @@ def build_tela_apresentacao(page: Page):
             ElevatedButton("Criar Fórmula Personalizada", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/custom_formula_setup"), tooltip="Crie suas próprias fórmulas para o quiz.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
             Container(height=20, margin=ft.margin.only(top=10)),
         ] + controles_botoes_tema,
-        alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL
+        alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL,
+        # Adicionar scroll caso o conteúdo fique muito grande com os botões de tema
+        scroll=ScrollMode.AUTO
     )
-    return Container(content=conteudo_apresentacao, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(
+        content=conteudo_apresentacao,
+        alignment=alignment.center,
+        expand=True,
+        padding=PADDING_VIEW
+    )
+
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None # Gradiente tem precedência
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+
+    return view_container
 
 def build_tela_quiz(page: Page):
     texto_pergunta = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"), opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
@@ -592,7 +649,15 @@ def build_tela_quiz(page: Page):
     botao_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     layout_botoes = Column([Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
     conteudo_quiz = Column([texto_pergunta, Container(height=15), layout_botoes, Container(height=15), texto_feedback, Container(height=20), botao_proxima, Container(height=10), botao_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
-    return Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 def build_tela_quiz_invertido(page: Page):
     texto_pergunta_invertida = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"), opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
@@ -647,7 +712,15 @@ def build_tela_quiz_invertido(page: Page):
     botao_voltar_inv = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     layout_botoes_inv = Column([Row(botoes_opcoes_invertidas[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes_invertidas[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
     conteudo_quiz_inv = Column([texto_pergunta_invertida, Container(height=15), layout_botoes_inv, Container(height=15), texto_feedback_invertido, Container(height=20), botao_proxima_invertido, Container(height=10), botao_voltar_inv], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
-    return Container(content=conteudo_quiz_inv, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_quiz_inv, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 def build_tela_treino(page: Page):
     tabuada_sugerida = sugerir_tabuada_para_treino()
@@ -680,7 +753,15 @@ def build_tela_treino(page: Page):
     btn_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     cont_tabuada = Container(content=coluna_itens_tabuada, border=border.all(2, obter_cor_do_tema_ativo("container_treino_borda")), border_radius=8, padding=padding.all(15), width=360, height=420, bgcolor=obter_cor_do_tema_ativo("container_treino_bg"))
     conteudo_treino = Column([titulo_treino, Container(height=10), cont_tabuada, Container(height=10), btn_verificar, Container(height=10), txt_resumo, Container(height=15), btn_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
-    return Container(content=conteudo_treino, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_treino, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 def build_tela_estatisticas(page: Page):
     stats_gerais = calcular_estatisticas_gerais()
@@ -750,7 +831,14 @@ def build_tela_estatisticas(page: Page):
         horizontal_alignment=CrossAxisAlignment.CENTER,
         spacing=ESPACAMENTO_COLUNA_GERAL
     )
-    return Container(content=conteudo_stats, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    view_container = Container(content=conteudo_stats, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 # --- Tela de Quiz com Fórmula Personalizada ---
 def build_tela_custom_quiz(page: Page):
@@ -945,7 +1033,15 @@ def build_tela_custom_quiz(page: Page):
         spacing=ESPACAMENTO_COLUNA_GERAL,
         scroll=ScrollMode.AUTO
     )
-    return Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 
 # --- Configuração Principal da Página e Rotas ---
