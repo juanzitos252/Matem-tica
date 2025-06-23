@@ -290,24 +290,65 @@ def parse_variable_ranges(range_str: str, default_min=1, default_max=10):
         parts = range_str.split('-')
         min_val = int(parts[0].strip())
         max_val = int(parts[1].strip())
+        if min_val > max_val:
+            min_val, max_val = max_val, min_val # Garante min <= max
         return {'min': min_val, 'max': max_val}
     except:
         return {'min': default_min, 'max': default_max}
 
 # --- Tela de Configuração de Fórmula Personalizada ---
 def build_tela_custom_formula_setup(page: Page):
-    nome_formula_field = TextField(label="Nome da Fórmula (Ex: Soma Básica)", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
-    # Exemplo: "a + b = resultado" ou "base * altura / 2 = area_triangulo"
-    base_equation_field = TextField(label="Equação Base (Ex: a + b = c)", hint_text="Define as variáveis e a estrutura.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
-    # Exemplo: "c = a + b" ou "area_triangulo = base * altura / 2"
-    calculation_formula_field = TextField(label="Fórmula de Cálculo (Ex: c = a + b)", hint_text="Como calcular o resultado.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
-
-    # Simplificando para duas variáveis 'a' e 'b' inicialmente
-    var_a_range_field = TextField(label="Range para 'a' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
-    var_b_range_field = TextField(label="Range para 'b' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("textfield_border_color"))
-    # Adicionar mais variáveis dinamicamente seria mais complexo, focando em 'a' e 'b' + resultado por agora.
-
+    nome_formula_field = TextField(
+        label="Nome da Fórmula (Ex: Área Triângulo)",
+        width=350,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
+    base_equation_field = TextField(
+        label="Equação Base (Ex: b * h / 2 = A)",
+        hint_text="Use 'a' e 'b' como nomes das variáveis de entrada. Ex: a * b / 2 = R",
+        width=350,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
+    calculation_formula_field = TextField(
+        label="Fórmula de Cálculo (Ex: R = a * b / 2)",
+        hint_text="Resultado (letra única) à esquerda. Use 'a' e 'b' para inputs.",
+        width=350,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
+    var_a_range_field = TextField(
+        label="Range para 'a' (Ex: 1-10)",
+        width=170,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
+    var_b_range_field = TextField(
+        label="Range para 'b' (Ex: 1-20)",
+        width=170,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
     feedback_text = Text("", color=obter_cor_do_tema_ativo("texto_padrao"))
+
+    formulas_dropdown = Dropdown(
+        label="Ou selecione uma fórmula salva",
+        width=350,
+        options=[ft.dropdown.Option(key=f['name'], text=f['name']) for f in custom_formulas_data],
+        border_color=obter_cor_do_tema_ativo("dropdown_border_color"),
+        color=obter_cor_do_tema_ativo("texto_padrao")
+    )
+
+    def update_formulas_dropdown():
+        formulas_dropdown.options = [ft.dropdown.Option(key=f['name'], text=f['name']) for f in custom_formulas_data]
+        current_selection = formulas_dropdown.value
+        if custom_formulas_data:
+            if not any(opt.key == current_selection for opt in formulas_dropdown.options):
+                formulas_dropdown.value = custom_formulas_data[-1]['name']
+        else:
+            formulas_dropdown.value = None
+        formulas_dropdown.update()
 
     def save_custom_formula_handler(e):
         global custom_formulas_data
@@ -323,43 +364,60 @@ def build_tela_custom_formula_setup(page: Page):
             page.update()
             return
 
-        # Tentativa de extrair variáveis da equação base (simplificado)
-        # Ex: "a + b = c" -> vars_in_eq = {'a', 'b', 'c'}, result_var_candidate = 'c'
-        # Ex: "x * y = z" -> vars_in_eq = {'x', 'y', 'z'}, result_var_candidate = 'z'
-        # Assume que a última variável após '=' é o resultado.
         parts_eq = base_eq.split('=')
         if len(parts_eq) != 2:
-            feedback_text.value = "Equação Base deve ter um sinal de '=' (Ex: a + b = c)."
+            feedback_text.value = "Equação Base deve ter um sinal de '=' (Ex: a * b = R)."
             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
             page.update()
             return
 
         result_var_candidate = parts_eq[1].strip()
-        # Extrair todas as letras como variáveis potenciais (simplificado)
-        # Isso não é robusto para nomes de variáveis com mais de uma letra ou funções.
-        # Para "a + b = c", vars_in_calc_formula = {'c', 'a', 'b'}
-        # Para "area = comprimento * largura", vars_in_calc_formula = {'area', 'comprimento', 'largura'}
-        # Esta implementação inicial focará em variáveis de uma única letra para simplificar.
+        if not result_var_candidate.isalpha() or len(result_var_candidate) != 1:
+             feedback_text.value = "Variável de resultado na Equação Base (após '=') deve ser uma única letra (Ex: R)."
+             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+             page.update()
+             return
 
-        # Validação simples: a fórmula de cálculo deve conter o resultado e as variáveis de entrada.
-        # E a fórmula de cálculo deve começar com "resultado_var = ..."
         if not calc_formula.startswith(result_var_candidate + " ="):
-            feedback_text.value = f"Fórmula de Cálculo deve começar com '{result_var_candidate} = ...' (baseado na Equação Base)."
+            feedback_text.value = f"Fórmula de Cálculo deve começar com '{result_var_candidate} = ...' (a variável de resultado)."
             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
             page.update()
             return
 
-        # Assume 'a' and 'b' são as variáveis de input por simplicidade desta primeira versão.
-        # Uma análise mais robusta extrairia vars da parte esquerda da Equação Base
-        # e da parte direita da Fórmula de Cálculo.
         input_vars_map = {}
-        if 'a' in base_eq and 'a' in calc_formula:
+        # Verifica se 'a' está no lado esquerdo da equação base e no lado direito da fórmula de cálculo
+        # E se o range para 'a' foi fornecido ou pode usar default
+        # TODO: Tornar a extração de variáveis mais flexível do que apenas 'a' e 'b' no futuro.
+        # Por agora, os campos de range forçam o uso de 'a' e 'b'.
+        base_eq_lhs = parts_eq[0]
+        calc_formula_rhs = calc_formula.split('=',1)[1]
+
+        if 'a' in base_eq_lhs and 'a' in calc_formula_rhs:
              input_vars_map['a'] = parse_variable_ranges(range_a_str)
-        if 'b' in base_eq and 'b' in calc_formula:
+        if 'b' in base_eq_lhs and 'b' in calc_formula_rhs:
             input_vars_map['b'] = parse_variable_ranges(range_b_str)
 
-        if not input_vars_map: # Se nem 'a' nem 'b' foram identificados como input
-            feedback_text.value = "Não foi possível identificar variáveis de entrada (a,b) na equação/fórmula."
+        expression_part = calc_formula_rhs.strip()
+        contains_vars_in_expr = any(char.isalpha() for char in expression_part if char not in ['a','b']) # Verifica outras vars
+
+        # Se a expressão de cálculo usa outras variáveis além de 'a' ou 'b' (que não são suportadas com ranges)
+        if contains_vars_in_expr:
+            feedback_text.value = "Fórmula de cálculo usa variáveis não suportadas (além de 'a' ou 'b')."
+            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        # Se não identificou 'a' ou 'b' como input_vars, mas a expressão de cálculo parece precisar deles (ou outros)
+        # E não é uma fórmula constante (ex: R = 5)
+        needs_input_vars = any(char in expression_part for char in ['a','b'])
+        if not input_vars_map and needs_input_vars :
+            feedback_text.value = "Variáveis 'a' ou 'b' usadas na fórmula de cálculo não foram encontradas na Equação Base, ou ranges não definidos."
+            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        if any(f['name'] == nome for f in custom_formulas_data):
+            feedback_text.value = f"Uma fórmula com o nome '{nome}' já existe."
             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
             page.update()
             return
@@ -367,40 +425,17 @@ def build_tela_custom_formula_setup(page: Page):
         formula_entry = {
             'name': nome,
             'base_equation': base_eq,
-            'formula_str': calc_formula, # Ex: "c = a + b"
-            'result_var': result_var_candidate, # Ex: "c"
-            'input_vars': input_vars_map # Ex: {'a': {'min':1, 'max':10}, 'b': {'min':1, 'max':10}}
+            'formula_str': calc_formula,
+            'result_var': result_var_candidate,
+            'input_vars': input_vars_map # Contém 'a' e/ou 'b' com seus ranges
         }
         custom_formulas_data.append(formula_entry)
         feedback_text.value = f"Fórmula '{nome}' salva!"
         feedback_text.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
-        # Limpar campos após salvar (opcional)
-        # nome_formula_field.value = ""; base_equation_field.value = ""; calculation_formula_field.value = ""
-        # var_a_range_field.value = ""; var_b_range_field.value = ""
+        update_formulas_dropdown()
+        nome_formula_field.value = ""; base_equation_field.value = ""; calculation_formula_field.value = ""
+        var_a_range_field.value = ""; var_b_range_field.value = ""
         page.update()
-
-    save_button = ElevatedButton("Salvar Fórmula", on_click=save_custom_formula_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
-    back_button = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
-
-    # TODO: Adicionar botão "Iniciar Quiz com esta Fórmula" que ficaria desabilitado até salvar.
-    # E uma lista de fórmulas salvas para selecionar para o quiz.
-
-    formulas_dropdown = Dropdown(
-        label="Ou selecione uma fórmula salva",
-        width=350,
-        options=[ft.dropdown.Option(key=f['name'], text=f['name']) for f in custom_formulas_data],
-        border_color=obter_cor_do_tema_ativo("dropdown_border_color"),
-        color=obter_cor_do_tema_ativo("texto_padrao")
-    )
-
-    def update_formulas_dropdown():
-        formulas_dropdown.options = [ft.dropdown.Option(key=f['name'], text=f['name']) for f in custom_formulas_data]
-        if custom_formulas_data:
-            formulas_dropdown.value = custom_formulas_data[-1]['name'] # Select last added
-        else:
-            formulas_dropdown.value = None
-        formulas_dropdown.update()
-
 
     def start_custom_quiz_handler(e):
         global current_custom_formula_for_quiz
@@ -420,94 +455,12 @@ def build_tela_custom_formula_setup(page: Page):
             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
             page.update()
 
-    # Atualizar dropdown na primeira carga da tela, caso haja fórmulas salvas de sessões anteriores (se persistência fosse implementada)
-    # Por agora, ele estará vazio no início, mas se voltarmos a esta tela, deve refletir o estado atual.
+    # Atualizar dropdown na primeira carga da tela.
     update_formulas_dropdown()
-
-
-    def save_custom_formula_handler(e): # Nested function needs access to formulas_dropdown or a way to update it
-        global custom_formulas_data
-        nome = nome_formula_field.value.strip()
-        base_eq = base_equation_field.value.strip()
-        calc_formula = calculation_formula_field.value.strip()
-        range_a_str = var_a_range_field.value.strip()
-        range_b_str = var_b_range_field.value.strip()
-
-        if not nome or not base_eq or not calc_formula:
-            feedback_text.value = "Preencha Nome, Equação Base e Fórmula de Cálculo."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        parts_eq = base_eq.split('=')
-        if len(parts_eq) != 2:
-            feedback_text.value = "Equação Base deve ter um sinal de '=' (Ex: a + b = c)."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        result_var_candidate = parts_eq[1].strip()
-        if not result_var_candidate.isalpha() or len(result_var_candidate) != 1: # Simplificação: var de resultado é 1 letra
-             feedback_text.value = "Variável de resultado na Equação Base deve ser uma única letra (Ex: c)."
-             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-             page.update()
-             return
-
-        if not calc_formula.startswith(result_var_candidate + " ="):
-            feedback_text.value = f"Fórmula de Cálculo deve começar com '{result_var_candidate} = ...'."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        input_vars_map = {}
-        # Simplificação: assume vars de entrada são 'a' e 'b' se presentes.
-        # Uma implementação mais robusta analisaria as vars da Equação Base e da Fórmula.
-        # Verifica se 'a' está no lado esquerdo da equação base e no lado direito da fórmula de cálculo
-        if 'a' in parts_eq[0] and 'a' in calc_formula.split('=')[1]:
-             input_vars_map['a'] = parse_variable_ranges(range_a_str)
-        # Verifica se 'b' está no lado esquerdo da equação base e no lado direito da fórmula de cálculo
-        if 'b' in parts_eq[0] and 'b' in calc_formula.split('=')[1]:
-            input_vars_map['b'] = parse_variable_ranges(range_b_str)
-
-        # Se nenhuma variável de entrada for identificada E a fórmula não for apenas um valor constante (ex: c = 5)
-        expression_part = calc_formula.split('=')[1].strip()
-        # Verifica se a expressão contém letras (variáveis)
-        contains_vars_in_expr = any(char.isalpha() for char in expression_part)
-
-        if not input_vars_map and contains_vars_in_expr:
-            feedback_text.value = "Não foi possível identificar variáveis de entrada (a,b) válidas na equação/fórmula."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        # Verificar se o nome da fórmula já existe
-        if any(f['name'] == nome for f in custom_formulas_data):
-            feedback_text.value = f"Uma fórmula com o nome '{nome}' já existe."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        formula_entry = {
-            'name': nome,
-            'base_equation': base_eq,
-            'formula_str': calc_formula,
-            'result_var': result_var_candidate,
-            'input_vars': input_vars_map
-        }
-        custom_formulas_data.append(formula_entry)
-        feedback_text.value = f"Fórmula '{nome}' salva!"
-        feedback_text.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
-
-        update_formulas_dropdown() # Atualiza o dropdown com a nova fórmula
-
-        nome_formula_field.value = ""; base_equation_field.value = ""; calculation_formula_field.value = ""
-        var_a_range_field.value = ""; var_b_range_field.value = ""
-        page.update()
 
     save_button = ElevatedButton("Salvar Nova Fórmula", on_click=save_custom_formula_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     start_quiz_button = ElevatedButton("Iniciar Quiz com Fórmula Selecionada", on_click=start_custom_quiz_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto"))
     back_button = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
-
 
     content = Column(
         controls=[
@@ -877,6 +830,11 @@ def build_tela_custom_quiz(page: Page):
 
         try:
             correct_answer = eval(expression_to_eval, safe_globals_for_eval, local_vars)
+            # Verificar se o resultado é numérico ANTES de tentar converter/arredondar
+            if not isinstance(correct_answer, (int, float)):
+                print(f"Erro: Resultado da fórmula não é numérico. Fórmula: '{formula_data['name']}', Expressão: '{expression_to_eval}', Resultado: {correct_answer}")
+                return None # Indica falha na geração
+
             correct_answer = int(correct_answer) if isinstance(correct_answer, float) and correct_answer.is_integer() else round(correct_answer, 2)
         except Exception as e:
             # Se houver erro na avaliação, retorna None para indicar falha na geração
@@ -1087,10 +1045,15 @@ def main(page: Page):
 
         page.update()
 
-    def view_pop(view_instance):
-        page.views.pop()
-        top_view = page.views[-1]
-        page.go(top_view.route)
+    def view_pop(view_instance): # view_instance é a view que foi popada pelo Flet
+        # A pilha page.views já foi alterada pelo Flet antes de chamar on_view_pop.
+        # Não devemos chamar page.views.pop() novamente aqui.
+        if page.views: # Garante que a lista de views não está vazia (deve sempre ter a base)
+            top_view = page.views[-1] # A nova view que ficou no topo
+            page.go(top_view.route)
+        # Se page.views estiver vazia, page.go('/') seria uma opção,
+        # mas o Flet pode ter um comportamento padrão (fechar app se for a última view).
+        # Com a view base '/', page.views nunca deve ficar vazia ao popar uma view sobre ela.
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
