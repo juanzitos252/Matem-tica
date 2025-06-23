@@ -497,9 +497,3 @@ def main(page: Page):
     page.go("/")
 
 ft.app(target=main)
-
-[end of main.py]
-
-[end of main.py]
-
-[end of main.py]
