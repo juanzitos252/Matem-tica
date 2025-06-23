@@ -181,11 +181,11 @@ TEMAS = {
     "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "botao_tema_bg": ft.Colors.PINK_ACCENT_100, "botao_tema_texto": ft.Colors.BLACK, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "textfield_border_color": ft.Colors.DEEP_PURPLE_400, "dropdown_border_color": ft.Colors.DEEP_PURPLE_400,"progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100},
     "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "botao_tema_bg": ft.Colors.CYAN_200, "botao_tema_texto": ft.Colors.BLACK87,"feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "textfield_border_color": ft.Colors.BLUE_600, "dropdown_border_color": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100},
     "escuro_moderno": {
-        "fundo_pagina": ft.colors.TEAL_900, # Fallback for page.bgcolor
+        "fundo_pagina": ft.Colors.TEAL_900, # Fallback for page.bgcolor
         "gradient_page_bg": ft.LinearGradient(
             begin=alignment.top_center, # Changed from top_left
             end=alignment.bottom_center,  # Changed from bottom_right
-            colors=[ft.colors.INDIGO_900, ft.colors.PURPLE_800, ft.colors.TEAL_800], # Slightly adjusted shades for harmony
+            colors=[ft.Colors.INDIGO_900, ft.Colors.PURPLE_800, ft.Colors.TEAL_800], # Slightly adjusted shades for harmony
             stops=[0.1, 0.6, 1.0]
         ),
         "texto_titulos": ft.Colors.CYAN_ACCENT_200,
@@ -196,18 +196,18 @@ TEMAS = {
         "botao_opcao_quiz_texto": ft.Colors.WHITE,
         "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400,
         "botao_destaque_texto": ft.Colors.WHITE,
-        "botao_tema_bg": ft.colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
+        "botao_tema_bg": ft.Colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
         "botao_tema_texto": ft.Colors.CYAN_ACCENT_100,                 # For theme selection buttons text
         "feedback_acerto_texto": ft.Colors.GREEN_ACCENT_200,
         "feedback_erro_texto": ft.Colors.RED_ACCENT_100,
-        "feedback_acerto_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
-        "feedback_erro_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
-        "container_treino_bg": ft.colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
+        "feedback_acerto_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
+        "feedback_erro_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
+        "container_treino_bg": ft.Colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
         "container_treino_borda": ft.Colors.CYAN_ACCENT_700,
         "textfield_border_color": ft.Colors.CYAN_ACCENT_700,
         "dropdown_border_color": ft.Colors.CYAN_ACCENT_700,
         "progressbar_cor": ft.Colors.CYAN_ACCENT_400,
-        "progressbar_bg_cor": ft.colors.with_opacity(0.2, ft.Colors.WHITE)
+        "progressbar_bg_cor": ft.Colors.with_opacity(0.2, ft.Colors.WHITE)
     }
 }
 tema_ativo_nome = "colorido" # Default theme
