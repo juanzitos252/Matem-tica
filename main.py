@@ -439,7 +439,7 @@ def build_tela_estatisticas(page: Page):
                 tooltip="Retornar à tela inicial.",
                 bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"),
                 color=obter_cor_do_tema_ativo("botao_principal_texto")
-            ) # <--- VÍRGULA ESTAVA FALTANDO AQUI, E FOI ADICIONADA NO PATCH ANTERIOR (subtarefa 18)
+            ), # <--- VÍRGULA ESTAVA FALTANDO AQUI, E FOI ADICIONADA NO PATCH ANTERIOR (subtarefa 18)
         ],
         scroll=ScrollMode.AUTO,
         alignment=MainAxisAlignment.CENTER,
