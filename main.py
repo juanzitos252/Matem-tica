@@ -8,6 +8,84 @@ from flet import (
 import random
 import time
 
+# --- Definições das Fórmulas Notáveis (Integrado de formula_definitions.py) ---
+
+# --- Funções de Cálculo para Fórmulas Notáveis ---
+
+def calc_quadrado_soma(a: int, b: int) -> int:
+    """Calcula (a+b)^2."""
+    return (a + b) ** 2
+
+def calc_quadrado_diferenca(a: int, b: int) -> int:
+    """Calcula (a-b)^2."""
+    return (a - b) ** 2
+
+def calc_produto_soma_diferenca(a: int, b: int) -> int:
+    """Calcula a^2 - b^2."""
+    return a**2 - b**2
+
+def calc_raiz_soma_diferenca(val_a: int, val_b: int) -> int:
+    """Calcula a - b, onde val_a e val_b são os números DENTRO das raízes na pergunta."""
+    return val_a - val_b
+
+# --- Definições da Lista de Fórmulas Notáveis ---
+FORMULAS_NOTAVEIS = [
+    {
+        'id': "quadrado_soma",
+        'display_name': "Quadrado da Soma: (a+b)^2",
+        'variables': ['a', 'b'],
+        'calculation_function': calc_quadrado_soma,
+        'question_template': "Se a={a} e b={b}, qual o valor de (a+b)^2?",
+        'reminder_template': "(x+y)^2 = x^2 + 2xy + y^2",
+        'range_constraints': {},
+        'variable_labels': {'a': "Valor de 'a'", 'b': "Valor de 'b'"}
+    },
+    {
+        'id': "quadrado_diferenca",
+        'display_name': "Quadrado da Diferença: (a-b)^2",
+        'variables': ['a', 'b'],
+        'calculation_function': calc_quadrado_diferenca,
+        'question_template': "Se a={a} e b={b}, qual o valor de (a-b)^2?",
+        'reminder_template': "(x-y)^2 = x^2 - 2xy + y^2",
+        'range_constraints': {},
+        'variable_labels': {'a': "Valor de 'a'", 'b': "Valor de 'b'"}
+    },
+    {
+        'id': "produto_soma_diferenca",
+        'display_name': "Produto da Soma pela Diferença: (a+b)(a-b)",
+        'variables': ['a', 'b'],
+        'calculation_function': calc_produto_soma_diferenca,
+        'question_template': "Se a={a} e b={b}, qual o valor de (a+b)(a-b)?",
+        'reminder_template': "(x+y)(x-y) = x^2 - y^2",
+        'range_constraints': {'b': 'less_than_equal_a'},
+        'variable_labels': {'a': "Valor de 'a'", 'b': "Valor de 'b' (b <= a)"}
+    },
+    {
+        'id': "raiz_soma_diferenca",
+        'display_name': "Diferença de Quadrados (Raízes): (sqrt(a)+sqrt(b))(sqrt(a)-sqrt(b))",
+        'variables': ['a', 'b'],
+        'calculation_function': calc_raiz_soma_diferenca,
+        'question_template': "Qual o valor de (sqrt({a}) + sqrt({b})) * (sqrt({a}) - sqrt({b}))?",
+        'reminder_template': "(sqrt(x) + sqrt(y))(sqrt(x) - sqrt(y)) = x - y",
+        'range_constraints': {
+            'a': {'min': 2},
+            'b': {'less_than_a': True, 'min': 1}
+        },
+        'variable_labels': {
+            'a': "Valor de 'a' (dentro da sqrt, a > b)",
+            'b': "Valor de 'b' (dentro da sqrt, b < a)"
+        }
+    },
+]
+
+def get_formula_definition(formula_id: str):
+    for formula in FORMULAS_NOTAVEIS:
+        if formula['id'] == formula_id:
+            return formula
+    return None
+
+# --- Fim das Definições das Fórmulas Notáveis ---
+
 # --- Lógica do Quiz ---
 multiplicacoes_data = []
 COOLDOWN_SEGUNDOS = 30
@@ -178,14 +256,46 @@ current_custom_formula_for_quiz = None # Armazena a fórmula selecionada para o 
 
 # --- Temas e Gerenciamento de Tema ---
 TEMAS = {
-    "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100},
-    "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100},
-    "escuro": {"fundo_pagina": ft.Colors.with_opacity(0.95, ft.Colors.BLACK), "texto_titulos": ft.Colors.PURPLE_ACCENT_100, "texto_padrao": ft.Colors.WHITE70, "botao_principal_bg": ft.Colors.PURPLE_ACCENT_200, "botao_principal_texto": ft.Colors.BLACK, "botao_opcao_quiz_bg": ft.Colors.BLUE_GREY_700, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400, "botao_destaque_texto": ft.Colors.WHITE, "feedback_acerto_texto": ft.Colors.LIGHT_GREEN_ACCENT_400, "feedback_erro_texto": ft.Colors.RED_ACCENT_100, "feedback_acerto_botao_bg": ft.Colors.with_opacity(0.2, ft.Colors.LIGHT_GREEN_ACCENT_400), "feedback_erro_botao_bg": ft.Colors.with_opacity(0.2, ft.Colors.RED_ACCENT_100), "container_treino_bg": ft.Colors.BLUE_GREY_800, "container_treino_borda": ft.Colors.PURPLE_ACCENT_200, "progressbar_cor": ft.Colors.PURPLE_ACCENT_200, "progressbar_bg_cor": ft.Colors.BLUE_GREY_600}
+    "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "botao_tema_bg": ft.Colors.PINK_ACCENT_100, "botao_tema_texto": ft.Colors.BLACK, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "textfield_border_color": ft.Colors.DEEP_PURPLE_400, "dropdown_border_color": ft.Colors.DEEP_PURPLE_400,"progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100},
+    "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "botao_tema_bg": ft.Colors.CYAN_200, "botao_tema_texto": ft.Colors.BLACK87,"feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "textfield_border_color": ft.Colors.BLUE_600, "dropdown_border_color": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100},
+    "escuro_moderno": {
+        "fundo_pagina": ft.Colors.TEAL_900, # Fallback for page.bgcolor
+        "gradient_page_bg": ft.LinearGradient(
+            begin=alignment.top_center, # Changed from top_left
+            end=alignment.bottom_center,  # Changed from bottom_right
+            colors=[ft.Colors.INDIGO_900, ft.Colors.PURPLE_800, ft.Colors.TEAL_800], # Slightly adjusted shades for harmony
+            stops=[0.1, 0.6, 1.0]
+        ),
+        "texto_titulos": ft.Colors.CYAN_ACCENT_200,
+        "texto_padrao": ft.Colors.WHITE,
+        "botao_principal_bg": ft.Colors.PINK_ACCENT_400,
+        "botao_principal_texto": ft.Colors.WHITE,
+        "botao_opcao_quiz_bg": ft.Colors.BLUE_GREY_700,
+        "botao_opcao_quiz_texto": ft.Colors.WHITE,
+        "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400,
+        "botao_destaque_texto": ft.Colors.WHITE,
+        "botao_tema_bg": ft.Colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
+        "botao_tema_texto": ft.Colors.CYAN_ACCENT_100,                 # For theme selection buttons text
+        "feedback_acerto_texto": ft.Colors.GREEN_ACCENT_200,
+        "feedback_erro_texto": ft.Colors.RED_ACCENT_100,
+        "feedback_acerto_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
+        "feedback_erro_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
+        "container_treino_bg": ft.Colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
+        "container_treino_borda": ft.Colors.CYAN_ACCENT_700,
+        "textfield_border_color": ft.Colors.CYAN_ACCENT_700,
+        "dropdown_border_color": ft.Colors.CYAN_ACCENT_700,
+        "progressbar_cor": ft.Colors.CYAN_ACCENT_400,
+        "progressbar_bg_cor": ft.Colors.with_opacity(0.2, ft.Colors.WHITE)
+    }
 }
-tema_ativo_nome = "colorido"
-def obter_cor_do_tema_ativo(nome_cor_semantica: str):
+tema_ativo_nome = "colorido" # Default theme
+def obter_cor_do_tema_ativo(nome_cor_semantica: str, fallback_color=ft.Colors.BLACK): # Added fallback_color param
+    # Se o tema ativo for o novo escuro e a cor pedida for 'gradient_page_bg', retorna o objeto Gradient.
+    if tema_ativo_nome == "escuro_moderno" and nome_cor_semantica == "gradient_page_bg":
+        return TEMAS["escuro_moderno"]["gradient_page_bg"]
+
     tema_atual = TEMAS.get(tema_ativo_nome, TEMAS["colorido"])
-    return tema_atual.get(nome_cor_semantica, ft.Colors.BLACK)
+    return tema_atual.get(nome_cor_semantica, fallback_color) # Use provided fallback
 
 # --- Constantes de UI (Dimensões e Animações) ---
 BOTAO_LARGURA_PRINCIPAL = 220
@@ -251,250 +361,241 @@ def mudar_tema(page: Page, novo_tema_nome: str):
     # We avoid calling page.go() here as we've manually rebuilt the view stack.
     # Calling page.go() would trigger route_change again, which is now redundant for this theme update.
 
-# --- Funções Auxiliares para Fórmulas Personalizadas ---
+# --- Funções Auxiliares para Fórmulas ---
+# (parse_variable_ranges pode ser mantido se for útil para os ranges de 'a' e 'b' das fórmulas notáveis)
 def parse_variable_ranges(range_str: str, default_min=1, default_max=10):
-    """Converte uma string como '1-10' em {'min': 1, 'max': 10}."""
+    """Converte uma string como '1-10' em {'min': 1, 'max': 10}. Limita ao intervalo 1-100."""
     try:
         parts = range_str.split('-')
         min_val = int(parts[0].strip())
         max_val = int(parts[1].strip())
+
+        # Garante min <= max
+        if min_val > max_val:
+            min_val, max_val = max_val, min_val
+
+        # Limita os valores para estar entre 1 e 10 (ou outro limite superior se necessário no futuro)
+        # Para as variáveis base das fórmulas notáveis, vamos manter o limite de 1-10.
+        min_val = max(1, min(min_val, 10))
+        max_val = max(1, min(max_val, 10))
+
+        # Garante min <= max novamente após o clipping
+        if min_val > max_val:
+            min_val = max_val # Se min_val era 11 e max_val era 5, ambos se tornam 10, depois min é ajustado.
+
         return {'min': min_val, 'max': max_val}
     except:
-        return {'min': default_min, 'max': default_max}
+        # Retorna o padrão, mas também limitado
+        return {'min': max(1, min(default_min, 10)), 'max': max(1, min(default_max, 10))}
 
-# --- Tela de Configuração de Fórmula Personalizada ---
-def build_tela_custom_formula_setup(page: Page):
-    nome_formula_field = TextField(label="Nome da Fórmula (Ex: Soma Básica)", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
-    # Exemplo: "a + b = resultado" ou "base * altura / 2 = area_triangulo"
-    base_equation_field = TextField(label="Equação Base (Ex: a + b = c)", hint_text="Define as variáveis e a estrutura.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
-    # Exemplo: "c = a + b" ou "area_triangulo = base * altura / 2"
-    calculation_formula_field = TextField(label="Fórmula de Cálculo (Ex: c = a + b)", hint_text="Como calcular o resultado.", width=350, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
+# (A linha "from formula_definitions import FORMULAS_NOTAVEIS, get_formula_definition" foi removida pois as definições estão agora neste arquivo)
 
-    # Simplificando para duas variáveis 'a' e 'b' inicialmente
-    var_a_range_field = TextField(label="Range para 'a' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
-    var_b_range_field = TextField(label="Range para 'b' (Ex: 1-10)", width=170, color=obter_cor_do_tema_ativo("texto_padrao"), border_color=obter_cor_do_tema_ativo("botao_principal_bg"))
-    # Adicionar mais variáveis dinamicamente seria mais complexo, focando em 'a' e 'b' + resultado por agora.
-
-    feedback_text = Text("", color=obter_cor_do_tema_ativo("texto_padrao"))
-
-    def save_custom_formula_handler(e):
-        global custom_formulas_data
-        nome = nome_formula_field.value.strip()
-        base_eq = base_equation_field.value.strip()
-        calc_formula = calculation_formula_field.value.strip()
-        range_a_str = var_a_range_field.value.strip()
-        range_b_str = var_b_range_field.value.strip()
-
-        if not nome or not base_eq or not calc_formula:
-            feedback_text.value = "Preencha Nome, Equação Base e Fórmula de Cálculo."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        # Tentativa de extrair variáveis da equação base (simplificado)
-        # Ex: "a + b = c" -> vars_in_eq = {'a', 'b', 'c'}, result_var_candidate = 'c'
-        # Ex: "x * y = z" -> vars_in_eq = {'x', 'y', 'z'}, result_var_candidate = 'z'
-        # Assume que a última variável após '=' é o resultado.
-        parts_eq = base_eq.split('=')
-        if len(parts_eq) != 2:
-            feedback_text.value = "Equação Base deve ter um sinal de '=' (Ex: a + b = c)."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        result_var_candidate = parts_eq[1].strip()
-        # Extrair todas as letras como variáveis potenciais (simplificado)
-        # Isso não é robusto para nomes de variáveis com mais de uma letra ou funções.
-        # Para "a + b = c", vars_in_calc_formula = {'c', 'a', 'b'}
-        # Para "area = comprimento * largura", vars_in_calc_formula = {'area', 'comprimento', 'largura'}
-        # Esta implementação inicial focará em variáveis de uma única letra para simplificar.
-
-        # Validação simples: a fórmula de cálculo deve conter o resultado e as variáveis de entrada.
-        # E a fórmula de cálculo deve começar com "resultado_var = ..."
-        if not calc_formula.startswith(result_var_candidate + " ="):
-            feedback_text.value = f"Fórmula de Cálculo deve começar com '{result_var_candidate} = ...' (baseado na Equação Base)."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        # Assume 'a' and 'b' são as variáveis de input por simplicidade desta primeira versão.
-        # Uma análise mais robusta extrairia vars da parte esquerda da Equação Base
-        # e da parte direita da Fórmula de Cálculo.
-        input_vars_map = {}
-        if 'a' in base_eq and 'a' in calc_formula:
-             input_vars_map['a'] = parse_variable_ranges(range_a_str)
-        if 'b' in base_eq and 'b' in calc_formula:
-            input_vars_map['b'] = parse_variable_ranges(range_b_str)
-
-        if not input_vars_map: # Se nem 'a' nem 'b' foram identificados como input
-            feedback_text.value = "Não foi possível identificar variáveis de entrada (a,b) na equação/fórmula."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        formula_entry = {
-            'name': nome,
-            'base_equation': base_eq,
-            'formula_str': calc_formula, # Ex: "c = a + b"
-            'result_var': result_var_candidate, # Ex: "c"
-            'input_vars': input_vars_map # Ex: {'a': {'min':1, 'max':10}, 'b': {'min':1, 'max':10}}
-        }
-        custom_formulas_data.append(formula_entry)
-        feedback_text.value = f"Fórmula '{nome}' salva!"
-        feedback_text.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
-        # Limpar campos após salvar (opcional)
-        # nome_formula_field.value = ""; base_equation_field.value = ""; calculation_formula_field.value = ""
-        # var_a_range_field.value = ""; var_b_range_field.value = ""
-        page.update()
-
-    save_button = ElevatedButton("Salvar Fórmula", on_click=save_custom_formula_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
-    back_button = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
-
-    # TODO: Adicionar botão "Iniciar Quiz com esta Fórmula" que ficaria desabilitado até salvar.
-    # E uma lista de fórmulas salvas para selecionar para o quiz.
-
-    formulas_dropdown = Dropdown(
-        label="Ou selecione uma fórmula salva",
+# --- Tela de Configuração de Quiz com Fórmula Notável ---
+def build_tela_formula_quiz_setup(page: Page):
+    # Campo para nomear esta configuração de quiz (opcional, mas útil se salvarmos)
+    quiz_config_name_field = TextField(
+        label="Nome para esta Configuração de Quiz (Ex: Treino Quadrado da Soma)",
         width=350,
-        options=[ft.dropdown.Option(key=f['name'], text=f['name']) for f in custom_formulas_data],
-        border_color=obter_cor_do_tema_ativo("botao_principal_bg"),
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
+
+    # Dropdown para selecionar o tipo de fórmula notável
+    formula_type_dropdown_options = [
+        ft.dropdown.Option(key=f['id'], text=f['display_name']) for f in FORMULAS_NOTAVEIS
+    ]
+    formula_type_dropdown = Dropdown(
+        label="Selecione o Tipo de Fórmula",
+        width=350,
+        options=formula_type_dropdown_options,
+        border_color=obter_cor_do_tema_ativo("dropdown_border_color"),
         color=obter_cor_do_tema_ativo("texto_padrao")
     )
 
-    def update_formulas_dropdown():
-        formulas_dropdown.options = [ft.dropdown.Option(key=f['name'], text=f['name']) for f in custom_formulas_data]
-        if custom_formulas_data:
-            formulas_dropdown.value = custom_formulas_data[-1]['name'] # Select last added
+    # Campos para os ranges das variáveis (inicialmente para 'a' e 'b')
+    # Labels serão atualizados com base na fórmula selecionada
+    var_a_range_field = TextField(
+        label="Range para 'a' (1-10)", # Label genérico inicial
+        width=170,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color"),
+        value="1-10" # Valor padrão
+    )
+    var_b_range_field = TextField(
+        label="Range para 'b' (1-10)", # Label genérico inicial
+        width=170,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color"),
+        value="1-10", # Valor padrão
+        visible=True # A maioria das fórmulas usará 'b'
+    )
+
+    feedback_text = Text("", color=obter_cor_do_tema_ativo("texto_padrao"))
+
+    # Dropdown para listar configurações de quiz salvas
+    # (Anteriormente 'formulas_dropdown', agora 'saved_quiz_configs_dropdown')
+    saved_quiz_configs_dropdown = Dropdown(
+        label="Ou selecione uma configuração de quiz salva",
+        width=350,
+        options=[ft.dropdown.Option(key=cfg['name'], text=cfg['name']) for cfg in custom_formulas_data], # custom_formulas_data será adaptado
+        border_color=obter_cor_do_tema_ativo("dropdown_border_color"),
+        color=obter_cor_do_tema_ativo("texto_padrao")
+    )
+
+    def update_variable_fields(selected_formula_id: str):
+        """Atualiza a visibilidade e labels dos campos de range das variáveis."""
+        definition = get_formula_definition(selected_formula_id)
+        if not definition:
+            var_a_range_field.visible = False
+            var_b_range_field.visible = False
         else:
-            formulas_dropdown.value = None
-        formulas_dropdown.update()
+            variables = definition.get('variables', [])
+            labels = definition.get('variable_labels', {})
 
+            if 'a' in variables:
+                var_a_range_field.label = labels.get('a', "Range para 'a' (1-10)")
+                var_a_range_field.visible = True
+            else:
+                var_a_range_field.visible = False
 
-    def start_custom_quiz_handler(e):
-        global current_custom_formula_for_quiz
-        selected_formula_name = formulas_dropdown.value
-        if not selected_formula_name:
-            feedback_text.value = "Nenhuma fórmula selecionada para o quiz."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        formula_to_run = next((f for f in custom_formulas_data if f['name'] == selected_formula_name), None)
-        if formula_to_run:
-            current_custom_formula_for_quiz = formula_to_run
-            page.go("/custom_quiz")
-        else:
-            feedback_text.value = f"Fórmula '{selected_formula_name}' não encontrada."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-
-    # Atualizar dropdown na primeira carga da tela, caso haja fórmulas salvas de sessões anteriores (se persistência fosse implementada)
-    # Por agora, ele estará vazio no início, mas se voltarmos a esta tela, deve refletir o estado atual.
-    update_formulas_dropdown()
-
-
-    def save_custom_formula_handler(e): # Nested function needs access to formulas_dropdown or a way to update it
-        global custom_formulas_data
-        nome = nome_formula_field.value.strip()
-        base_eq = base_equation_field.value.strip()
-        calc_formula = calculation_formula_field.value.strip()
-        range_a_str = var_a_range_field.value.strip()
-        range_b_str = var_b_range_field.value.strip()
-
-        if not nome or not base_eq or not calc_formula:
-            feedback_text.value = "Preencha Nome, Equação Base e Fórmula de Cálculo."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        parts_eq = base_eq.split('=')
-        if len(parts_eq) != 2:
-            feedback_text.value = "Equação Base deve ter um sinal de '=' (Ex: a + b = c)."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        result_var_candidate = parts_eq[1].strip()
-        if not result_var_candidate.isalpha() or len(result_var_candidate) != 1: # Simplificação: var de resultado é 1 letra
-             feedback_text.value = "Variável de resultado na Equação Base deve ser uma única letra (Ex: c)."
-             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-             page.update()
-             return
-
-        if not calc_formula.startswith(result_var_candidate + " ="):
-            feedback_text.value = f"Fórmula de Cálculo deve começar com '{result_var_candidate} = ...'."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        input_vars_map = {}
-        # Simplificação: assume vars de entrada são 'a' e 'b' se presentes.
-        # Uma implementação mais robusta analisaria as vars da Equação Base e da Fórmula.
-        # Verifica se 'a' está no lado esquerdo da equação base e no lado direito da fórmula de cálculo
-        if 'a' in parts_eq[0] and 'a' in calc_formula.split('=')[1]:
-             input_vars_map['a'] = parse_variable_ranges(range_a_str)
-        # Verifica se 'b' está no lado esquerdo da equação base e no lado direito da fórmula de cálculo
-        if 'b' in parts_eq[0] and 'b' in calc_formula.split('=')[1]:
-            input_vars_map['b'] = parse_variable_ranges(range_b_str)
-
-        # Se nenhuma variável de entrada for identificada E a fórmula não for apenas um valor constante (ex: c = 5)
-        expression_part = calc_formula.split('=')[1].strip()
-        # Verifica se a expressão contém letras (variáveis)
-        contains_vars_in_expr = any(char.isalpha() for char in expression_part)
-
-        if not input_vars_map and contains_vars_in_expr:
-            feedback_text.value = "Não foi possível identificar variáveis de entrada (a,b) válidas na equação/fórmula."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        # Verificar se o nome da fórmula já existe
-        if any(f['name'] == nome for f in custom_formulas_data):
-            feedback_text.value = f"Uma fórmula com o nome '{nome}' já existe."
-            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            page.update()
-            return
-
-        formula_entry = {
-            'name': nome,
-            'base_equation': base_eq,
-            'formula_str': calc_formula,
-            'result_var': result_var_candidate,
-            'input_vars': input_vars_map
-        }
-        custom_formulas_data.append(formula_entry)
-        feedback_text.value = f"Fórmula '{nome}' salva!"
-        feedback_text.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
-
-        update_formulas_dropdown() # Atualiza o dropdown com a nova fórmula
-
-        nome_formula_field.value = ""; base_equation_field.value = ""; calculation_formula_field.value = ""
-        var_a_range_field.value = ""; var_b_range_field.value = ""
+            if 'b' in variables:
+                var_b_range_field.label = labels.get('b', "Range para 'b' (1-10)")
+                var_b_range_field.visible = True
+            else:
+                var_b_range_field.visible = False
         page.update()
 
-    save_button = ElevatedButton("Salvar Nova Fórmula", on_click=save_custom_formula_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
-    start_quiz_button = ElevatedButton("Iniciar Quiz com Fórmula Selecionada", on_click=start_custom_quiz_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto"))
-    back_button = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    def on_formula_type_change(e):
+        if formula_type_dropdown.value:
+            update_variable_fields(formula_type_dropdown.value)
+        else: # Nenhum tipo selecionado, esconde campos de range
+            var_a_range_field.visible = False
+            var_b_range_field.visible = False
+            page.update()
 
+    formula_type_dropdown.on_change = on_formula_type_change
+    # Inicializar visibilidade dos campos de range (nenhuma fórmula selecionada inicialmente)
+    var_a_range_field.visible = False
+    var_b_range_field.visible = False
+
+
+    def update_saved_quiz_configs_dropdown():
+        # custom_formulas_data agora armazena configurações de quiz notável
+        saved_quiz_configs_dropdown.options = [
+            ft.dropdown.Option(key=cfg['name'], text=cfg['name']) for cfg in custom_formulas_data
+        ]
+        current_selection = saved_quiz_configs_dropdown.value
+        if custom_formulas_data:
+            if not any(opt.key == current_selection for opt in saved_quiz_configs_dropdown.options):
+                saved_quiz_configs_dropdown.value = custom_formulas_data[-1]['name']
+        else:
+            saved_quiz_configs_dropdown.value = None
+        saved_quiz_configs_dropdown.update()
+
+    # Handler para SALVAR uma CONFIGURAÇÃO de quiz com fórmula notável
+    # (Adaptado de save_custom_formula_handler)
+    def save_quiz_config_handler(e):
+        global custom_formulas_data # Esta lista agora armazena configs de quiz notável
+
+        config_name = quiz_config_name_field.value.strip()
+        selected_formula_id = formula_type_dropdown.value
+
+        if not config_name:
+            feedback_text.value = "Por favor, dê um nome para esta configuração de quiz."
+            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        if not selected_formula_id:
+            feedback_text.value = "Por favor, selecione um tipo de fórmula."
+            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        if any(cfg['name'] == config_name for cfg in custom_formulas_data):
+            feedback_text.value = f"Uma configuração de quiz com o nome '{config_name}' já existe."
+            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        # Obter ranges das variáveis visíveis
+        ranges = {}
+        definition = get_formula_definition(selected_formula_id)
+        if definition:
+            if 'a' in definition.get('variables', []):
+                ranges['a'] = parse_variable_ranges(var_a_range_field.value)
+            if 'b' in definition.get('variables', []):
+                ranges['b'] = parse_variable_ranges(var_b_range_field.value)
+
+        # Validar ranges com base nas constraints da fórmula (a ser feito na Etapa 5 ao gerar pergunta)
+        # Por ex, para raiz_soma_diferenca, b deve ser < a.
+        # Esta validação pode ser mais complexa e talvez melhor no momento da geração da pergunta
+        # ou com feedback mais dinâmico na UI. Por agora, salvamos os ranges como dados.
+
+        quiz_config_entry = {
+            'name': config_name,
+            'formula_id': selected_formula_id,
+            'ranges': ranges
+            # 'reminder_template' e 'question_template' virão da definição da fórmula ao gerar o quiz
+        }
+        custom_formulas_data.append(quiz_config_entry)
+        feedback_text.value = f"Configuração de Quiz '{config_name}' salva!"
+        feedback_text.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
+
+        update_saved_quiz_configs_dropdown()
+        quiz_config_name_field.value = ""
+        formula_type_dropdown.value = None # Resetar dropdown de tipo
+        var_a_range_field.visible = False # Esconder ranges
+        var_b_range_field.visible = False
+        page.update()
+
+    # Handler para INICIAR um quiz com uma CONFIGURAÇÃO SALVA
+    def start_quiz_with_saved_config_handler(e):
+        global current_custom_formula_for_quiz # Esta var global será usada para passar a config do quiz
+
+        selected_config_name = saved_quiz_configs_dropdown.value
+        if not selected_config_name:
+            feedback_text.value = "Nenhuma configuração de quiz salva selecionada."
+            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        # Encontra a configuração salva
+        quiz_config_to_run = next((cfg for cfg in custom_formulas_data if cfg['name'] == selected_config_name), None)
+
+        if quiz_config_to_run:
+            # `current_custom_formula_for_quiz` agora armazena a *configuração do quiz* selecionada,
+            # que inclui o formula_id e os ranges.
+            current_custom_formula_for_quiz = quiz_config_to_run
+            page.go("/custom_quiz") # A tela /custom_quiz precisará ser adaptada
+        else:
+            feedback_text.value = f"Configuração de Quiz '{selected_config_name}' não encontrada."
+            feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+
+    update_saved_quiz_configs_dropdown() # Atualizar dropdown de configs salvas na carga inicial
+
+    save_button = ElevatedButton("Salvar Configuração do Quiz", on_click=save_quiz_config_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    start_quiz_button = ElevatedButton("Iniciar Quiz com Config. Salva", on_click=start_quiz_with_saved_config_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto"))
+    back_button = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
 
     content = Column(
         controls=[
-            Text("Criar/Selecionar Fórmula Personalizada", size=28, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos")),
+            Text("Configurar Quiz com Fórmula Notável", size=28, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos")),
             Container(height=10),
-            Text("Criar Nova Fórmula:", size=18, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao")),
-            nome_formula_field,
-            base_equation_field,
-            calculation_formula_field,
+            Text("1. Configure um novo Quiz:", size=18, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao")),
+            quiz_config_name_field,
+            formula_type_dropdown, # Novo dropdown para tipo de fórmula
             Container(height=5),
-            Text("Ranges para variáveis 'a' e 'b' (Ex: 1-10, padrão 1-10):", color=obter_cor_do_tema_ativo("texto_padrao"), size=12),
+            Text("Defina os ranges para as variáveis (1-10):", color=obter_cor_do_tema_ativo("texto_padrao"), size=12),
             Row([var_a_range_field, var_b_range_field], spacing=10, alignment=MainAxisAlignment.CENTER),
             Container(height=10),
-            save_button,
+            save_button, # Agora salva a configuração do quiz
             Container(height=15, border=ft.border.only(bottom=ft.BorderSide(1, obter_cor_do_tema_ativo("texto_padrao"))), margin=ft.margin.symmetric(vertical=10)),
-            Text("Iniciar Quiz com Fórmula Existente:", size=18, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao")),
-            formulas_dropdown,
+            Text("2. Ou inicie um Quiz com uma Configuração Salva:", size=18, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao")),
+            saved_quiz_configs_dropdown, # Lista configurações salvas
             Container(height=10),
-            start_quiz_button,
+            start_quiz_button, # Inicia com config salva
             Container(height=10),
             feedback_text,
             Container(height=15),
@@ -505,7 +606,15 @@ def build_tela_custom_formula_setup(page: Page):
         horizontal_alignment=CrossAxisAlignment.CENTER,
         spacing=ESPACAMENTO_COLUNA_GERAL
     )
-    return Container(content=content, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=content, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 
 def build_tela_apresentacao(page: Page):
@@ -514,9 +623,9 @@ def build_tela_apresentacao(page: Page):
         Container(height=5),
         Row(
             [
-                ElevatedButton(text="Colorido", on_click=lambda _: mudar_tema(page, "colorido"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
-                ElevatedButton(text="Claro", on_click=lambda _: mudar_tema(page, "claro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
-                ElevatedButton(text="Escuro", on_click=lambda _: mudar_tema(page, "escuro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
+                ElevatedButton(text="Colorido", on_click=lambda _: mudar_tema(page, "colorido"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_tema_bg"), color=obter_cor_do_tema_ativo("botao_tema_texto")),
+                ElevatedButton(text="Claro", on_click=lambda _: mudar_tema(page, "claro"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_tema_bg"), color=obter_cor_do_tema_ativo("botao_tema_texto")),
+                ElevatedButton(text="Escuro Moderno", on_click=lambda _: mudar_tema(page, "escuro_moderno"), width=BOTAO_LARGURA_PRINCIPAL/2 - 5, height=BOTAO_ALTURA_PRINCIPAL-10, bgcolor=obter_cor_do_tema_ativo("botao_tema_bg"), color=obter_cor_do_tema_ativo("botao_tema_texto")),
             ],
             alignment=MainAxisAlignment.CENTER,
             spacing = 10
@@ -535,12 +644,29 @@ def build_tela_apresentacao(page: Page):
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
             ElevatedButton("Estatísticas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/estatisticas"), tooltip="Veja seu progresso.", bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")),
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
-            ElevatedButton("Criar Fórmula Personalizada", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/custom_formula_setup"), tooltip="Crie suas próprias fórmulas para o quiz.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
+            ElevatedButton("Quiz com Fórmulas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/formula_quiz_setup"), tooltip="Crie ou selecione um quiz baseado em fórmulas notáveis.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")), # Rota e texto atualizados
             Container(height=20, margin=ft.margin.only(top=10)),
         ] + controles_botoes_tema,
-        alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL
+        alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL,
+        # Adicionar scroll caso o conteúdo fique muito grande com os botões de tema
+        scroll=ScrollMode.AUTO
     )
-    return Container(content=conteudo_apresentacao, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(
+        content=conteudo_apresentacao,
+        alignment=alignment.center,
+        expand=True,
+        padding=PADDING_VIEW
+    )
+
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None # Gradiente tem precedência
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+
+    return view_container
 
 def build_tela_quiz(page: Page):
     texto_pergunta = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"), opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
@@ -592,7 +718,15 @@ def build_tela_quiz(page: Page):
     botao_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     layout_botoes = Column([Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
     conteudo_quiz = Column([texto_pergunta, Container(height=15), layout_botoes, Container(height=15), texto_feedback, Container(height=20), botao_proxima, Container(height=10), botao_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
-    return Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 def build_tela_quiz_invertido(page: Page):
     texto_pergunta_invertida = Text(size=30, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"), opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
@@ -647,7 +781,15 @@ def build_tela_quiz_invertido(page: Page):
     botao_voltar_inv = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     layout_botoes_inv = Column([Row(botoes_opcoes_invertidas[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes_invertidas[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
     conteudo_quiz_inv = Column([texto_pergunta_invertida, Container(height=15), layout_botoes_inv, Container(height=15), texto_feedback_invertido, Container(height=20), botao_proxima_invertido, Container(height=10), botao_voltar_inv], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
-    return Container(content=conteudo_quiz_inv, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_quiz_inv, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 def build_tela_treino(page: Page):
     tabuada_sugerida = sugerir_tabuada_para_treino()
@@ -680,7 +822,15 @@ def build_tela_treino(page: Page):
     btn_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     cont_tabuada = Container(content=coluna_itens_tabuada, border=border.all(2, obter_cor_do_tema_ativo("container_treino_borda")), border_radius=8, padding=padding.all(15), width=360, height=420, bgcolor=obter_cor_do_tema_ativo("container_treino_bg"))
     conteudo_treino = Column([titulo_treino, Container(height=10), cont_tabuada, Container(height=10), btn_verificar, Container(height=10), txt_resumo, Container(height=15), btn_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
-    return Container(content=conteudo_treino, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_treino, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 def build_tela_estatisticas(page: Page):
     stats_gerais = calcular_estatisticas_gerais()
@@ -750,7 +900,14 @@ def build_tela_estatisticas(page: Page):
         horizontal_alignment=CrossAxisAlignment.CENTER,
         spacing=ESPACAMENTO_COLUNA_GERAL
     )
-    return Container(content=conteudo_stats, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    view_container = Container(content=conteudo_stats, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 # --- Tela de Quiz com Fórmula Personalizada ---
 def build_tela_custom_quiz(page: Page):
@@ -768,79 +925,142 @@ def build_tela_custom_quiz(page: Page):
     botoes_opcoes = [ElevatedButton(width=BOTAO_LARGURA_OPCAO_QUIZ, height=BOTAO_ALTURA_OPCAO_QUIZ, opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO) for _ in range(4)]
     texto_feedback = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, opacity=0, scale=0.8, animate_opacity=ANIMACAO_FEEDBACK_OPACIDADE, animate_scale=ANIMACAO_FEEDBACK_ESCALA)
 
-    # Define globals permitidos para eval. Apenas o mínimo necessário.
-    # Funções matemáticas seguras podem ser adicionadas aqui se necessário (ex: 'abs': abs)
-    # Para aritmética básica, um dict vazio para builtins é mais seguro.
-    safe_globals_for_eval = {"__builtins__": {}}
+    # Renomeada de generate_custom_question_data
+    # A variável safe_globals_for_eval não é mais necessária aqui, pois não usamos eval() com strings de usuário.
+    def generate_notable_formula_question_data(quiz_config):
+        formula_id = quiz_config.get('formula_id')
+        user_ranges = quiz_config.get('ranges', {})
 
-
-    def generate_custom_question_data(formula_data):
-        local_vars = {}
-        question_parts = []
-        for var_name, var_props in formula_data['input_vars'].items():
-            val = random.randint(var_props['min'], var_props['max'])
-            local_vars[var_name] = val
-            question_parts.append(f"{var_name} = {val}")
-
-        question_prompt_vars = ", ".join(question_parts)
-
-        # Extrai a expressão a ser calculada. Ex: "c = a + b" -> "a + b"
-        expression_to_eval = formula_data['formula_str'].split('=', 1)[1].strip()
-
-        try:
-            correct_answer = eval(expression_to_eval, safe_globals_for_eval, local_vars)
-            correct_answer = int(correct_answer) if isinstance(correct_answer, float) and correct_answer.is_integer() else round(correct_answer, 2)
-        except Exception as e:
-            # Se houver erro na avaliação, retorna None para indicar falha na geração
-            print(f"Erro ao avaliar fórmula '{formula_data['name']}': {expression_to_eval} com {local_vars}. Erro: {e}")
+        formula_definition = get_formula_definition(formula_id)
+        if not formula_definition:
+            print(f"Erro: Definição da fórmula não encontrada para ID: {formula_id}")
             return None
 
-        # Gerar opções incorretas (simples)
+        variables_defs = formula_definition.get('variables', [])
+        calculation_func = formula_definition.get('calculation_function')
+        question_template = formula_definition.get('question_template')
+        reminder_template = formula_definition.get('reminder_template')
+        range_constraints = formula_definition.get('range_constraints', {})
+
+        if not all([variables_defs, calculation_func, question_template, reminder_template]):
+            print(f"Erro: Definição da fórmula incompleta para ID: {formula_id}")
+            return None
+
+        local_vars_values = {}
+        # Sortear valores para as variáveis base
+        # Exemplo para 'a' e 'b', adaptável se houver mais ou menos variáveis no futuro
+
+        val_a, val_b = None, None
+
+        if 'a' in variables_defs:
+            range_a_config = user_ranges.get('a', {'min': 1, 'max': 10}) # Pega range do usuário ou default
+            min_a_constr = range_constraints.get('a', {}).get('min', 1)
+
+            actual_min_a = max(range_a_config['min'], min_a_constr)
+            actual_max_a = range_a_config['max']
+            if actual_min_a > actual_max_a : actual_min_a = actual_max_a # Evitar erro no randint
+
+            val_a = random.randint(actual_min_a, actual_max_a)
+            local_vars_values['a'] = val_a
+
+        if 'b' in variables_defs:
+            range_b_config = user_ranges.get('b', {'min': 1, 'max': 10})
+            min_b_constr = range_constraints.get('b', {}).get('min', 1)
+
+            actual_min_b = max(range_b_config['min'], min_b_constr)
+            actual_max_b = range_b_config['max']
+
+            # Aplicar restrições relacionais
+            if range_constraints.get('b', {}).get('less_than_a') and val_a is not None:
+                actual_max_b = min(actual_max_b, val_a - 1)
+            elif range_constraints.get('b', {}).get('less_than_equal_a') and val_a is not None:
+                actual_max_b = min(actual_max_b, val_a)
+
+            if actual_min_b > actual_max_b: # Se restrições tornarem impossível
+                # Tentar um fallback simples: se b precisa ser < a, e a é 1, não é possível.
+                # Esta lógica de fallback pode precisar de mais refinamento para casos complexos.
+                # Por agora, se o range ficar inválido, pode dar erro no randint ou gerar valor não ideal.
+                # Uma solução seria tentar sortear 'a' novamente ou sinalizar erro.
+                # Para as fórmulas atuais, os ranges 1-10 e as restrições devem ser gerenciáveis.
+                # Se min_b se tornou > max_b, forçar min_b = max_b (ou o contrário, dependendo da causa)
+                # Ex: se a=1 e b<a, max_b fica 0. min_b é 1. randint(1,0) falha.
+                # Ajuste:
+                if actual_min_b > actual_max_b:
+                     if range_constraints.get('b', {}).get('less_than_a') and val_a == 1: # Caso específico: a=1, b<a
+                         print(f"Aviso: Não é possível sortear b < a quando a=1 para fórmula {formula_id}. Tentando a=2.")
+                         val_a = 2 # Tenta forçar 'a' para um valor que permita 'b'
+                         local_vars_values['a'] = val_a
+                         actual_max_b = min(range_b_config['max'], val_a -1) # Recalcula max_b
+                         if actual_min_b > actual_max_b: # Ainda problemático
+                             print(f"Erro Crítico: Range inválido para 'b' mesmo após ajuste de 'a' para fórmula {formula_id}")
+                             return None
+                     else: # Outro caso de min > max
+                         actual_min_b = actual_max_b # Ou alguma outra lógica de ajuste
+
+            val_b = random.randint(actual_min_b, actual_max_b)
+            local_vars_values['b'] = val_b
+
+        try:
+            # As funções de cálculo esperam argumentos nomeados
+            correct_answer = calculation_func(**local_vars_values)
+        except Exception as e:
+            print(f"Erro ao calcular fórmula '{formula_id}' com valores {local_vars_values}. Erro: {e}")
+            return None
+
+        # Formatar a pergunta
+        full_question_text = question_template.format(**local_vars_values)
+
+        # Gerar opções incorretas (lógica similar à anterior)
         options_set = {correct_answer}
         attempts = 0
-        while len(options_set) < 4 and attempts < 20:
-            offset_type = random.choice([-1, 1, -2, 2, -3, 3, -5, 5])
-            if isinstance(correct_answer, (int, float)):
-                if abs(correct_answer) > 10: # Maior variação para números maiores
-                    offset_type = random.choice([-1, 1, -2, 2, int(correct_answer * 0.1), -int(correct_answer * 0.1), random.randint(-5,5) ])
-                    if offset_type == 0 : offset_type = random.choice([-1,1]) if correct_answer !=0 else 1
+        # Garantir que as opções sejam inteiras se a resposta for inteira
+        is_correct_answer_int = isinstance(correct_answer, int)
 
-                new_opt = correct_answer + offset_type
-                if isinstance(correct_answer, int): new_opt = int(round(new_opt))
-                else: new_opt = round(new_opt,2)
+        while len(options_set) < 4 and attempts < 50: # Aumentado tentativas para mais robustez
+            offset_val = random.choice([-3, -2, -1, 1, 2, 3, 5, -5]) # Offsets inteiros
+            if abs(correct_answer) > 20: # Maior variação para números maiores
+                 # Tenta gerar offsets proporcionais, mas garante que sejam inteiros
+                prop_offset_candidate = round(correct_answer * random.choice([0.1, -0.1, 0.2, -0.2]))
+                if prop_offset_candidate == 0: prop_offset_candidate = random.choice([-1,1])
+                offset_val = random.choice([offset_val, int(prop_offset_candidate)]) # Usa o offset proporcional ou um fixo
 
-                if new_opt not in options_set:
-                    options_set.add(new_opt)
-            else: # Se a resposta não for numérica, preencher com placeholders
-                 options_set.add(f"Opção {len(options_set)+1}")
+            new_opt = correct_answer + offset_val
+            if is_correct_answer_int: # Se a resposta é int, as opções devem ser int
+                new_opt = int(round(new_opt))
 
+            if new_opt not in options_set:
+                options_set.add(new_opt)
             attempts += 1
 
-        # Fallback se não conseguir gerar 3 opções distintas
         idx = 1
-        while len(options_set) < 4:
-            if isinstance(correct_answer, (int, float)):
-                options_set.add(correct_answer + idx * (random.choice([-1,1]) if idx > 0 else 1) * (1 if correct_answer != 0 else 10) ) # Evitar adicionar 0 repetidamente
-            else: # Placeholder para não numérico
-                options_set.add(f"Alt {idx+len(options_set)}")
+        while len(options_set) < 4: # Fallback mais simples
+            alt_opt = correct_answer + (idx * random.choice([-1,1]))
+            if is_correct_answer_int: alt_opt = int(round(alt_opt))
+
+            if alt_opt not in options_set : options_set.add(alt_opt)
             idx +=1
-            if idx > 20 : break # Evitar loop infinito
+            if idx > 20 : break
 
         final_options = list(options_set)
+        # Se por algum motivo ainda não tem 4, preenche com sequenciais simples
+        idx = 1
+        base_fill_val = correct_answer if isinstance(correct_answer, (int, float)) else 1
+        while len(final_options) < 4:
+            fill_opt = base_fill_val + idx * 10 + random.randint(0,5) # Gera números mais distintos
+            if is_correct_answer_int: fill_opt = int(round(fill_opt))
+            if fill_opt not in final_options: final_options.append(fill_opt)
+            else: final_options.append(base_fill_val - idx * 10 - random.randint(0,5)) # Tenta outro lado
+            idx +=1
+            if idx > 10: break # Evita loop infinito no fallback do fallback
+
         random.shuffle(final_options)
-
-        # Usar a parte esquerda da "base_equation" para a pergunta
-        question_text_base = formula_data['base_equation'].split('=')[0].strip()
-        full_question_text = f"Se {question_prompt_vars}, qual o valor de {question_text_base}?"
-        if not formula_data['input_vars']: # Caso de fórmula constante, ex: c = 10
-            full_question_text = f"Qual o valor de {formula_data['result_var']} na fórmula: {formula_data['base_equation']}?"
-
 
         return {
             'full_question': full_question_text,
-            'options': final_options,
+            'options': final_options[:4], # Garante que só tem 4 opções
             'correct_answer': correct_answer,
-            'formula_details': formula_data # Para referência, se necessário
+            'reminder_template': reminder_template
+            # 'formula_details' não é mais a string da fórmula, mas a config do quiz já está em current_custom_formula_for_quiz
         }
 
     def handle_custom_answer(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref, question_data_ref):
@@ -870,27 +1090,39 @@ def build_tela_custom_quiz(page: Page):
     botao_proxima = ElevatedButton("Próxima Pergunta", on_click=None, visible=False, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
 
     # Store current question data to be accessible by handlers
-    current_question_data_ref = {}
+    current_question_data_ref = {} # Armazena dados da pergunta atual, incluindo o gabarito do lembrete
 
-    def carregar_nova_pergunta_custom(page_ref, formula_obj_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl, question_data_storage):
+    # Novo controle para exibir o lembrete da fórmula
+    texto_lembrete_formula = Text(
+        "",
+        size=16,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        text_align=TextAlign.CENTER,
+        opacity=0,
+        animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO
+    )
+
+    def carregar_nova_pergunta_custom(page_ref, formula_config_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage):
         txt_feedback_ctrl.opacity = 0; txt_feedback_ctrl.scale = 0.8
+        txt_lembrete_ctrl.opacity = 0 # Esconde lembrete ao carregar nova pergunta
         txt_pergunta_ctrl.opacity = 0
         for btn_opcao in btn_opcoes_ctrls: btn_opcao.opacity = 0
 
-        question_data = generate_custom_question_data(formula_obj_ref)
+        # A função foi renomeada e sua lógica interna alterada na Etapa 5
+        question_data = generate_notable_formula_question_data(formula_config_ref)
 
         if not question_data:
-            txt_pergunta_ctrl.value = "Erro ao gerar pergunta para esta fórmula."; txt_pergunta_ctrl.opacity = 1
+            txt_pergunta_ctrl.value = "Erro ao gerar pergunta para esta configuração."; txt_pergunta_ctrl.opacity = 1
             for btn in btn_opcoes_ctrls: btn.visible = False
             txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
-            # Adicionar botão para voltar
-            btn_proxima_ctrl.text = "Voltar para Seleção"
-            btn_proxima_ctrl.on_click = lambda _: page.go("/custom_formula_setup")
+            btn_proxima_ctrl.text = "Voltar para Configuração"
+            # A rota /custom_formula_setup foi renomeada para /formula_quiz_setup
+            btn_proxima_ctrl.on_click = lambda _: page.go("/formula_quiz_setup")
             btn_proxima_ctrl.visible = True
             page_ref.update(); return
 
         question_data_storage.clear()
-        question_data_storage.update(question_data)
+        question_data_storage.update(question_data) # Salva dados da pergunta, incluindo reminder_template
 
         txt_pergunta_ctrl.value = question_data['full_question']
 
@@ -898,43 +1130,81 @@ def build_tela_custom_quiz(page: Page):
             if i < len(question_data['options']):
                 op_val = question_data['options'][i]
                 btn_opcoes_ctrls[i].text = str(op_val)
-                btn_opcoes_ctrls[i].data = {'option': op_val} # Não precisa de 'correta' aqui, comparado no handler
-                btn_opcoes_ctrls[i].on_click = lambda e, btn=btn_opcoes_ctrls[i]: handle_custom_answer(page_ref, btn, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl, question_data_storage)
+                btn_opcoes_ctrls[i].data = {'option': op_val}
+                # Passar txt_lembrete_ctrl para handle_custom_answer
+                btn_opcoes_ctrls[i].on_click = lambda e, btn=btn_opcoes_ctrls[i]: handle_custom_answer(page_ref, btn, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage)
                 btn_opcoes_ctrls[i].bgcolor = obter_cor_do_tema_ativo("botao_opcao_quiz_bg")
                 btn_opcoes_ctrls[i].color = obter_cor_do_tema_ativo("botao_opcao_quiz_texto")
                 btn_opcoes_ctrls[i].disabled = False; btn_opcoes_ctrls[i].visible = True
-            else: # Caso não tenha 4 opções (improvável com o fallback)
+            else:
                 btn_opcoes_ctrls[i].visible = False
 
         txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
-        # Reset Próxima Pergunta button in case it was changed to "Voltar"
         btn_proxima_ctrl.text = "Próxima Pergunta"
-        btn_proxima_ctrl.on_click = lambda _: carregar_nova_pergunta_custom(page_ref, formula_obj_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, btn_proxima_ctrl, question_data_storage)
+        # Passar txt_lembrete_ctrl para o on_click do botão Próxima Pergunta
+        btn_proxima_ctrl.on_click = lambda _: carregar_nova_pergunta_custom(page_ref, formula_config_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage)
 
         txt_pergunta_ctrl.opacity = 1
         for btn_opcao in btn_opcoes_ctrls:
             if btn_opcao.visible: btn_opcao.opacity = 1
         page_ref.update()
 
+    # Modificar handle_custom_answer para aceitar e usar txt_lembrete_ctrl
+    def handle_custom_answer(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, txt_lembrete_ctrl_ref, btn_proxima_ctrl_ref, question_data_ref):
+        selected_option = botao_clicado_ref.data['option']
+        correct_answer = question_data_ref['correct_answer']
+        reminder_text = question_data_ref.get('reminder_template', "") # Obter o lembrete
+
+        is_correct = (selected_option == correct_answer)
+
+        if is_correct:
+            txt_feedback_ctrl_ref.value = "Correto!"
+            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
+            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_acerto_botao_bg")
+        else:
+            txt_feedback_ctrl_ref.value = f"Errado! A resposta era {correct_answer}"
+            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_erro_botao_bg")
+            for btn_op in todos_botoes_opcoes_ref:
+                if btn_op.data['option'] == correct_answer:
+                    btn_op.bgcolor = obter_cor_do_tema_ativo("feedback_acerto_botao_bg")
+                    break
+
+        for btn in todos_botoes_opcoes_ref: btn.disabled = True
+        txt_feedback_ctrl_ref.opacity = 1; txt_feedback_ctrl_ref.scale = 1
+
+        # Exibir o lembrete da fórmula
+        if reminder_text:
+            txt_lembrete_ctrl_ref.value = f"Lembrete: {reminder_text}"
+            txt_lembrete_ctrl_ref.opacity = 1
+
+        btn_proxima_ctrl_ref.visible = True; page.update()
+
+
     # Configurar o clique do botão "Próxima Pergunta"
-    botao_proxima.on_click = lambda _: carregar_nova_pergunta_custom(page, formula_obj, texto_pergunta, botoes_opcoes, texto_feedback, botao_proxima, current_question_data_ref)
+    # formula_obj é current_custom_formula_for_quiz, que agora é a quiz_config
+    botao_proxima.on_click = lambda _: carregar_nova_pergunta_custom(page, formula_obj, texto_pergunta, botoes_opcoes, texto_feedback, texto_lembrete_formula, botao_proxima, current_question_data_ref)
 
     # Carregar a primeira pergunta
-    carregar_nova_pergunta_custom(page, formula_obj, texto_pergunta, botoes_opcoes, texto_feedback, botao_proxima, current_question_data_ref)
+    carregar_nova_pergunta_custom(page, formula_obj, texto_pergunta, botoes_opcoes, texto_feedback, texto_lembrete_formula, botao_proxima, current_question_data_ref)
 
-    botao_voltar_setup = ElevatedButton("Mudar Fórmula / Menu", on_click=lambda _: page.go("/custom_formula_setup"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
+    # O botão voltar deve ir para a nova tela de setup /formula_quiz_setup
+    botao_voltar_setup = ElevatedButton("Mudar Config. / Menu", on_click=lambda _: page.go("/formula_quiz_setup"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
 
     layout_botoes = Column([Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
 
+    # Adicionar texto_lembrete_formula ao layout
     conteudo_quiz = Column(
         [
-            Text(f"Quiz: {formula_obj['name']}", size=20, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), text_align=TextAlign.CENTER),
+            Text(f"Quiz Fórmula: {formula_obj['name']}", size=20, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), text_align=TextAlign.CENTER), # Nome da config salva
             Container(height=5),
             texto_pergunta,
             Container(height=15),
             layout_botoes,
             Container(height=15),
             texto_feedback,
+            Container(height=10), # Espaço antes do lembrete
+            texto_lembrete_formula, # Novo controle adicionado
             Container(height=20),
             botao_proxima,
             Container(height=10),
@@ -945,7 +1215,15 @@ def build_tela_custom_quiz(page: Page):
         spacing=ESPACAMENTO_COLUNA_GERAL,
         scroll=ScrollMode.AUTO
     )
-    return Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+
+    view_container = Container(content=conteudo_quiz, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 
 # --- Configuração Principal da Página e Rotas ---
@@ -991,10 +1269,15 @@ def main(page: Page):
 
         page.update()
 
-    def view_pop(view_instance):
-        page.views.pop()
-        top_view = page.views[-1]
-        page.go(top_view.route)
+    def view_pop(view_instance): # view_instance é a view que foi popada pelo Flet
+        # A pilha page.views já foi alterada pelo Flet antes de chamar on_view_pop.
+        # Não devemos chamar page.views.pop() novamente aqui.
+        if page.views: # Garante que a lista de views não está vazia (deve sempre ter a base)
+            top_view = page.views[-1] # A nova view que ficou no topo
+            page.go(top_view.route)
+        # Se page.views estiver vazia, page.go('/') seria uma opção,
+        # mas o Flet pode ter um comportamento padrão (fechar app se for a última view).
+        # Com a view base '/', page.views nunca deve ficar vazia ao popar uma view sobre ela.
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
