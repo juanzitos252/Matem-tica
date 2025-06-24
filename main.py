@@ -273,13 +273,127 @@ custom_formulas_data = [] # Lista para armazenar as fórmulas personalizadas
 current_custom_formula_for_quiz = None # Armazena a fórmula selecionada para o quiz personalizado
 
 # --- Constantes e Lógica de Atualização ---
-GITHUB_REPO_URL = "https://api.github.com/repos/desenvolvedorXXX/quiz_app_flet/releases/latest" # Substitua pelo seu URL
+GITHUB_REPO_URL = "https://api.github.com/repos/desenvolvedorXXX/quiz_app_flet/releases/latest" # !!! IMPORTANTE: Substitua pelo seu URL do repositório GitHub !!!
 APP_CURRENT_VERSION = "0.1.0" # Defina a versão atual do seu aplicativo
 
 # Variáveis globais para status da atualização
 update_available = False
 latest_version_tag = ""
 update_check_status_message = "Verificando atualizações..."
+
+# --- Elementos Globais da UI para Atualização (Definidos antecipadamente) ---
+# Estes são definidos aqui para estarem disponíveis globalmente quando as telas são construídas.
+# Suas propriedades (cor, texto, visibilidade) serão atualizadas dinamicamente.
+
+update_status_icon = ft.Icon(
+    name=ft.icons.SYNC_PROBLEM, # Ícone inicial
+    # A cor será definida dinamicamente com base no tema e status
+    tooltip="Verificando atualizações...",
+    size=20
+)
+update_status_text = ft.Text(
+    f"v{APP_CURRENT_VERSION}", # Texto inicial
+    size=10,
+    # A cor será definida dinamicamente
+    opacity=0.7
+)
+update_action_button = ft.ElevatedButton(
+    text="Atualizar Agora",
+    icon=ft.icons.UPDATE,
+    visible=False, # Começa invisível
+    # on_click será definido depois (show_update_dialog)
+    # bgcolor e color serão definidos dinamicamente
+)
+
+# --- Diálogo de Confirmação e Lógica de Atualização (Definidos antecipadamente) ---
+update_progress_indicator = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
+update_dialog_content_text = Text("Uma nova versão do aplicativo está disponível. Deseja atualizar agora? O aplicativo precisará ser reiniciado.")
+
+# Placeholder para o diálogo, será totalmente definido em `main` ou em uma função de setup se necessário
+update_dialog = None # Será um ft.AlertDialog
+
+def close_dialog(e, page_ref: ft.Page, dialog_ref: ft.AlertDialog):
+    if dialog_ref:
+        dialog_ref.open = False
+    if page_ref: # Adicionada verificação para page_ref
+        page_ref.update()
+
+def perform_update_action(e, page_ref: ft.Page, dialog_ref: ft.AlertDialog):
+    global update_check_status_message
+
+    if not dialog_ref: # Adicionada verificação
+        return
+
+    dialog_ref.content = Column([
+        update_dialog_content_text,
+        Container(height=10),
+        Row([update_progress_indicator, Text("Atualizando...")], alignment=MainAxisAlignment.CENTER)
+    ])
+    update_progress_indicator.visible = True
+    dialog_ref.actions = [] # Remover botões durante o processo
+    if page_ref: page_ref.update()
+
+    try:
+        if not os.path.exists(".git"):
+            update_dialog_content_text.value = "Erro: Não é um repositório git. A atualização automática não pode prosseguir."
+            update_progress_indicator.visible = False
+            dialog_ref.actions = [ft.TextButton("OK", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
+            if page_ref: page_ref.update()
+            return
+
+        subprocess.run(['git', 'stash', 'push', '-u', '-m', 'autostash_before_update'], check=True, capture_output=True)
+        print("Git stash push executado.")
+
+        pull_result = subprocess.run(['git', 'pull', '--ff-only'], check=True, capture_output=True, text=True)
+        print(f"Git pull executado: {pull_result.stdout}")
+
+        subprocess.run(['git', 'stash', 'pop'], capture_output=True)
+        print("Git stash pop tentado.")
+
+        update_dialog_content_text.value = "Atualização concluída com sucesso! Por favor, reinicie o aplicativo para aplicar as alterações."
+        update_check_status_message = "Atualizado! Reinicie."
+
+    except subprocess.CalledProcessError as err:
+        error_message = f"Erro durante a atualização: {err.stderr or err.stdout or str(err)}"
+        print(error_message)
+        update_dialog_content_text.value = error_message
+        subprocess.run(['git', 'stash', 'pop'], capture_output=True)
+
+    except FileNotFoundError:
+        update_dialog_content_text.value = "Erro: Git não encontrado. A atualização não pode prosseguir."
+    except Exception as ex:
+        update_dialog_content_text.value = f"Erro inesperado: {str(ex)}"
+
+    update_progress_indicator.visible = False
+    dialog_ref.actions = [ft.TextButton("OK, Reiniciar Manualmente", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
+    if page_ref: page_ref.update()
+
+
+def show_update_dialog(page_ref: ft.Page): # page_ref pode ser None se chamado antes da página estar pronta
+    global update_dialog # Acessa o update_dialog global
+    if not page_ref or not update_dialog: # Adicionada verificação para page_ref e update_dialog
+        print("Página ou diálogo de atualização não pronto para show_update_dialog")
+        return
+
+    # Certificar que o conteúdo e ações do diálogo estão corretos antes de mostrar
+    update_dialog.content = update_dialog_content_text
+    update_dialog.actions = [
+            ft.TextButton("Sim, Atualizar", on_click=lambda e: perform_update_action(e, page_ref, update_dialog)),
+            ft.TextButton("Agora Não", on_click=lambda e: close_dialog(e, page_ref, update_dialog)),
+        ]
+    update_dialog.title=Text("Confirmar Atualização")
+    update_dialog.modal=True
+    update_dialog.actions_alignment=ft.MainAxisAlignment.END
+
+    page_ref.dialog = update_dialog
+    update_dialog.open = True
+    page_ref.update()
+
+# Agora que show_update_dialog está definido, podemos atribuí-lo ao botão.
+# A atribuição final do on_click será feita na função `main` onde a instância `page` é acessível,
+# para garantir que `show_update_dialog` receba a referência correta da página.
+# update_action_button.on_click = lambda _: show_update_dialog(ft.page) # Comentado para definir em main
+
 
 def get_local_git_commit_hash():
     """Obtém o hash do commit local."""
@@ -323,7 +437,26 @@ def check_for_updates():
         update_check_status_message = "Erro ao verificar atualizações."
         print(f"Erro ao verificar atualizações: {e}")
     except Exception as e:
-        update_check_status_message = "Erro inesperado na verificação."
+        update_check_status_message = "Verificando atualizações..." # Reset message before check
+        print(f"Erro inesperado ao verificar atualizações: {e}")
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            update_check_status_message = "Erro: URL de atualização não encontrada (404)."
+            print(f"Erro 404: A URL {GITHUB_REPO_URL} não foi encontrada. Verifique a configuração GITHUB_REPO_URL.")
+        elif e.response.status_code == 403:
+            update_check_status_message = "Erro: Acesso proibido à URL de atualização (403)."
+            print(f"Erro 403: Acesso proibido à URL {GITHUB_REPO_URL}. Verifique as permissões do token ou do repositório.")
+        else:
+            update_check_status_message = f"Erro HTTP: {e.response.status_code} ao verificar atualizações."
+            print(f"Erro HTTP {e.response.status_code} ao verificar atualizações: {e}")
+    except requests.exceptions.ConnectionError:
+        update_check_status_message = "Erro: Não foi possível conectar para verificar atualizações."
+        print("Erro de conexão ao verificar atualizações. Verifique sua internet.")
+    except requests.exceptions.Timeout:
+        update_check_status_message = "Erro: Timeout ao verificar atualizações."
+        print("Timeout ao verificar atualizações.")
+    except Exception as e: # Captura outras exceções genéricas
+        update_check_status_message = "Erro inesperado na verificação de atualizações."
         print(f"Erro inesperado ao verificar atualizações: {e}")
 
 # --- Temas e Gerenciamento de Tema ---
@@ -1323,158 +1456,75 @@ def main(page: Page):
     page.window_height = 800
     page.fonts = {"RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"}
 
-    # --- Elementos Globais da UI para Atualização ---
-    update_status_icon = ft.Icon(name=ft.icons.SYNC_PROBLEM, color=obter_cor_do_tema_ativo("update_icon_color_error"), tooltip=update_check_status_message, size=20)
-    update_status_text = ft.Text(f"v{APP_CURRENT_VERSION} ({local_git_commit})", size=10, color=obter_cor_do_tema_ativo("texto_padrao"), opacity=0.7)
-    update_action_button = ft.ElevatedButton(
-        text="Atualizar Agora",
-        icon=ft.icons.UPDATE,
-        visible=False,
-        on_click=lambda _: show_update_dialog(page), # Definiremos show_update_dialog depois
-        bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"),
-        color=obter_cor_do_tema_ativo("botao_destaque_texto")
+    # Inicializar o global update_dialog que foi definido como None anteriormente
+    global update_dialog
+    update_dialog = ft.AlertDialog(
+        modal=True,
+        title=Text("Confirmar Atualização"), # Título padrão
+        content=update_dialog_content_text, # Conteúdo global
+        # As ações são (re)definidas em show_update_dialog
     )
+
 
     def update_ui_elements_for_update_status():
         """Atualiza os elementos da UI com base no status da verificação de atualização."""
         global update_available, latest_version_tag, update_check_status_message, APP_CURRENT_VERSION, local_git_commit
+        global update_status_icon, update_status_text, update_action_button # Certificar que estamos usando os globais
 
-        update_status_text.value = f"v{APP_CURRENT_VERSION} ({local_git_commit.splitlines()[0] if local_git_commit else 'N/A'}) - {update_check_status_message}"
-        update_status_text.color = obter_cor_do_tema_ativo("texto_padrao") # Resetar cor
-        update_action_button.visible = False # Esconder por padrão
+        # Atualiza cores baseadas no tema ATIVO
+        update_status_icon.tooltip = update_check_status_message # Tooltip primeiro
+        update_status_text.color = obter_cor_do_tema_ativo("texto_padrao")
+        update_action_button.bgcolor = obter_cor_do_tema_ativo("botao_destaque_bg")
+        update_action_button.color = obter_cor_do_tema_ativo("botao_destaque_texto")
 
-        if "Erro ao verificar" in update_check_status_message or "Erro inesperado" in update_check_status_message:
+
+        current_commit_hash = local_git_commit.splitlines()[0] if local_git_commit else 'N/A'
+        base_text = f"v{APP_CURRENT_VERSION} ({current_commit_hash})"
+
+        if "Erro ao verificar" in update_check_status_message or "Erro inesperado" in update_check_status_message or "Não foi possível conectar" in update_check_status_message :
             update_status_icon.name = ft.icons.ERROR_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_error")
-            update_status_icon.tooltip = update_check_status_message
+            # update_status_icon.tooltip já definido
+            update_status_text.value = f"{base_text} - {update_check_status_message}"
+            update_action_button.visible = False
         elif update_available:
             update_status_icon.name = ft.icons.NEW_RELEASES
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_available")
             update_status_icon.tooltip = f"Nova versão {latest_version_tag} disponível!"
             update_status_text.value = f"Atualização: v{APP_CURRENT_VERSION} -> {latest_version_tag}"
             update_action_button.visible = True
-            update_action_button.bgcolor = obter_cor_do_tema_ativo("botao_destaque_bg")
-            update_action_button.color = obter_cor_do_tema_ativo("botao_destaque_texto")
-
         else: # Nenhuma atualização ou já atualizado
             update_status_icon.name = ft.icons.CHECK_CIRCLE_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_uptodate")
             update_status_icon.tooltip = "Você está na versão mais recente."
+            update_status_text.value = f"{base_text} - {update_check_status_message}" # Mostra "Você está na versão mais recente"
+            update_action_button.visible = False
 
-        # Atualiza o botão de atualização se estiver na tela de apresentação
-        # (ou em qualquer outra tela que o contenha - precisa ser adicionado lá também)
-        # Esta é uma forma simples, idealmente o botão seria parte de um layout persistente ou AppBar
-        if page.route == "/":
-             # A lógica de reconstrução da tela de apresentação precisará adicionar este botão
-             # ou teremos que encontrar o botão no `page.views` e atualizá-lo.
-             # Por agora, vamos assumir que o botão é atualizado ao reconstruir a view.
-             pass
+        # A AppBar é (re)construída em route_change, então os elementos dentro dela
+        # usarão esses valores atualizados dos controles globais.
+        # A visibilidade do update_action_button na tela de apresentação é controlada
+        # diretamente ao construir essa tela.
 
+        if page.appbar and hasattr(page.appbar, 'actions'):
+            # A AppBar é reconstruída em route_change, então os elementos
+            # já devem ter os valores corretos dos globais.
+            # No entanto, uma atualização explícita da página pode ser necessária
+            # se a mudança de status ocorrer sem uma mudança de rota.
+            pass
 
-        if page.controls: # Se houver AppBar, atualiza lá
-            app_bar = page.appbar
-            if app_bar and hasattr(app_bar, 'actions'):
-                # Encontrar e atualizar os elementos na AppBar
-                for action_item in app_bar.actions:
-                    if isinstance(action_item, ft.Row) and len(action_item.controls) > 1:
-                        icon_ctrl = action_item.controls[0]
-                        text_ctrl = action_item.controls[1]
-                        if isinstance(icon_ctrl, ft.Icon) and isinstance(text_ctrl, ft.Text):
-                            icon_ctrl.name = update_status_icon.name
-                            icon_ctrl.color = update_status_icon.color
-                            icon_ctrl.tooltip = update_status_icon.tooltip
-                            text_ctrl.value = update_status_text.value
-                            text_ctrl.color = update_status_text.color
-                            break
         page.update()
 
     def run_update_check_and_ui_refresh(page_ref: Page):
         """Executa a verificação de atualização e atualiza a UI."""
-        check_for_updates()
-        update_ui_elements_for_update_status()
-        page_ref.update()
+        check_for_updates() # Atualiza as variáveis globais de status
+        update_ui_elements_for_update_status() # Atualiza os controles globais da UI
+        # page_ref.update() # A page.update() dentro de update_ui_elements_for_update_status deve ser suficiente
 
+    # O page.on_load pode ser um bom lugar para a primeira chamada se disponível,
+    # mas como estamos usando threading, o início na função main é aceitável.
 
-    # --- Diálogo de Confirmação e Lógica de Atualização ---
-    update_progress_indicator = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
-    update_dialog_content_text = Text("Uma nova versão do aplicativo está disponível. Deseja atualizar agora? O aplicativo precisará ser reiniciado.")
-
-    def perform_update_action(e, page_ref: Page, dialog_ref: ft.AlertDialog):
-        global update_check_status_message
-
-        dialog_ref.content = Column([
-            update_dialog_content_text,
-            Container(height=10),
-            Row([update_progress_indicator, Text("Atualizando...")], alignment=MainAxisAlignment.CENTER)
-        ])
-        update_progress_indicator.visible = True
-        dialog_ref.actions = [] # Remover botões durante o processo
-        page_ref.update()
-
-        try:
-            # 1. Verificar se é um repositório git
-            if not os.path.exists(".git"):
-                update_dialog_content_text.value = "Erro: Não é um repositório git. A atualização automática não pode prosseguir."
-                update_progress_indicator.visible = False
-                dialog_ref.actions = [ft.TextButton("OK", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
-                page_ref.update()
-                return
-
-            # 2. Salvar quaisquer alterações locais não commitadas (stash)
-            subprocess.run(['git', 'stash', 'push', '-u', '-m', 'autostash_before_update'], check=True, capture_output=True)
-            print("Git stash push executado.")
-
-            # 3. Puxar as últimas alterações do repositório (branch padrão)
-            pull_result = subprocess.run(['git', 'pull', '--ff-only'], check=True, capture_output=True, text=True) # --ff-only para evitar merges
-            print(f"Git pull executado: {pull_result.stdout}")
-
-            # 4. Tentar aplicar o stash de volta (opcional, mas bom para manter alterações locais)
-            #    Se houver conflitos, o usuário precisará resolver manualmente após reiniciar.
-            subprocess.run(['git', 'stash', 'pop'], capture_output=True) # Não checa 'check=True' aqui, pois pode falhar com conflitos
-            print("Git stash pop tentado.")
-
-            update_dialog_content_text.value = "Atualização concluída com sucesso! Por favor, reinicie o aplicativo para aplicar as alterações."
-            update_check_status_message = "Atualizado! Reinicie." # Atualiza a mensagem global também
-
-        except subprocess.CalledProcessError as err:
-            error_message = f"Erro durante a atualização: {err.stderr or err.stdout or str(err)}"
-            print(error_message)
-            update_dialog_content_text.value = error_message
-            # Tentar reverter o stash se o pull falhou
-            subprocess.run(['git', 'stash', 'pop'], capture_output=True)
-
-        except FileNotFoundError:
-            update_dialog_content_text.value = "Erro: Git não encontrado. A atualização não pode prosseguir."
-        except Exception as ex:
-            update_dialog_content_text.value = f"Erro inesperado: {str(ex)}"
-
-        update_progress_indicator.visible = False
-        dialog_ref.actions = [ft.TextButton("OK, Reiniciar Manualmente", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
-        page_ref.update()
-
-
-    update_dialog = ft.AlertDialog(
-        modal=True,
-        title=Text("Confirmar Atualização"),
-        content=update_dialog_content_text, # Usar o controle de texto
-        actions=[
-            ft.TextButton("Sim, Atualizar", on_click=lambda e: perform_update_action(e, page, update_dialog)),
-            ft.TextButton("Agora Não", on_click=lambda e: close_dialog(e, page, update_dialog)),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
-
-    def close_dialog(e, page_ref: Page, dialog_ref: ft.AlertDialog):
-        dialog_ref.open = False
-        page_ref.update()
-
-    def show_update_dialog(page_ref: Page):
-        page_ref.dialog = update_dialog
-        update_dialog.open = True
-        page_ref.update()
-
-    # --- Fim dos Elementos de Atualização ---
-
+    # Atribuir o on_click para update_action_button aqui, onde 'page' é definido.
+    update_action_button.on_click = lambda _: show_update_dialog(page)
 
     def route_change(route_obj):
         page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
