@@ -7,6 +7,11 @@ from flet import (
 )
 import random
 import time
+import requests
+from packaging import version
+import subprocess
+import threading
+import os # Adicionado para manipulação de caminhos
 
 # --- Definições das Fórmulas Notáveis (Integrado de formula_definitions.py) ---
 
@@ -267,10 +272,64 @@ inicializar_multiplicacoes()
 custom_formulas_data = [] # Lista para armazenar as fórmulas personalizadas
 current_custom_formula_for_quiz = None # Armazena a fórmula selecionada para o quiz personalizado
 
+# --- Constantes e Lógica de Atualização ---
+GITHUB_REPO_URL = "https://api.github.com/repos/desenvolvedorXXX/quiz_app_flet/releases/latest" # Substitua pelo seu URL
+APP_CURRENT_VERSION = "0.1.0" # Defina a versão atual do seu aplicativo
+
+# Variáveis globais para status da atualização
+update_available = False
+latest_version_tag = ""
+update_check_status_message = "Verificando atualizações..."
+
+def get_local_git_commit_hash():
+    """Obtém o hash do commit local."""
+    try:
+        # Verifica se é um repositório git
+        if not os.path.exists(".git"):
+            return "Não é um repositório git"
+
+        result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True, check=True)
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Erro ao obter hash do commit local: {e}")
+        return "Erro ao obter commit"
+    except FileNotFoundError:
+        print("Git não encontrado. Certifique-se de que está instalado e no PATH.")
+        return "Git não encontrado"
+
+local_git_commit = get_local_git_commit_hash()
+
+def check_for_updates():
+    global update_available, latest_version_tag, update_check_status_message, APP_CURRENT_VERSION
+    try:
+        response = requests.get(GITHUB_REPO_URL, timeout=10)
+        response.raise_for_status()
+        release_info = response.json()
+        latest_version_tag = release_info['tag_name']
+
+        # Remove 'v' prefixo se existir (ex: v1.0.1 -> 1.0.1)
+        parsed_latest_version = latest_version_tag.lstrip('v')
+        parsed_current_version = APP_CURRENT_VERSION.lstrip('v')
+
+        if version.parse(parsed_latest_version) > version.parse(parsed_current_version):
+            update_available = True
+            update_check_status_message = f"Nova versão {latest_version_tag} disponível!"
+            print(f"Atualização disponível: {latest_version_tag}")
+        else:
+            update_available = False
+            update_check_status_message = "Você está na versão mais recente."
+            print("Nenhuma atualização encontrada.")
+    except requests.exceptions.RequestException as e:
+        update_check_status_message = "Erro ao verificar atualizações."
+        print(f"Erro ao verificar atualizações: {e}")
+    except Exception as e:
+        update_check_status_message = "Erro inesperado na verificação."
+        print(f"Erro inesperado ao verificar atualizações: {e}")
+
 # --- Temas e Gerenciamento de Tema ---
 TEMAS = {
-    "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "botao_tema_bg": ft.Colors.PINK_ACCENT_100, "botao_tema_texto": ft.Colors.BLACK, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "textfield_border_color": ft.Colors.DEEP_PURPLE_400, "dropdown_border_color": ft.Colors.DEEP_PURPLE_400,"progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100},
-    "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "botao_tema_bg": ft.Colors.CYAN_200, "botao_tema_texto": ft.Colors.BLACK87,"feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "textfield_border_color": ft.Colors.BLUE_600, "dropdown_border_color": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100},
+    "colorido": {"fundo_pagina": ft.Colors.PURPLE_50, "texto_titulos": ft.Colors.DEEP_PURPLE_700, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.DEEP_PURPLE_400, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.BLUE_300, "botao_opcao_quiz_texto": ft.Colors.WHITE, "botao_destaque_bg": ft.Colors.PINK_ACCENT_200, "botao_destaque_texto": ft.Colors.BLACK87, "botao_tema_bg": ft.Colors.PINK_ACCENT_100, "botao_tema_texto": ft.Colors.BLACK, "feedback_acerto_texto": ft.Colors.GREEN_600, "feedback_erro_texto": ft.Colors.RED_500, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.DEEP_PURPLE_400, "textfield_border_color": ft.Colors.DEEP_PURPLE_400, "dropdown_border_color": ft.Colors.DEEP_PURPLE_400,"progressbar_cor": ft.Colors.DEEP_PURPLE_400, "progressbar_bg_cor": ft.Colors.PURPLE_100, "update_icon_color_available": ft.Colors.AMBER_700, "update_icon_color_uptodate": ft.Colors.GREEN_700, "update_icon_color_error": ft.Colors.RED_700},
+    "claro": {"fundo_pagina": ft.Colors.GREY_100, "texto_titulos": ft.Colors.BLACK, "texto_padrao": ft.Colors.BLACK87, "botao_principal_bg": ft.Colors.BLUE_600, "botao_principal_texto": ft.Colors.WHITE, "botao_opcao_quiz_bg": ft.Colors.LIGHT_BLUE_200, "botao_opcao_quiz_texto": ft.Colors.BLACK87, "botao_destaque_bg": ft.Colors.CYAN_600, "botao_destaque_texto": ft.Colors.WHITE, "botao_tema_bg": ft.Colors.CYAN_200, "botao_tema_texto": ft.Colors.BLACK87,"feedback_acerto_texto": ft.Colors.GREEN_700, "feedback_erro_texto": ft.Colors.RED_700, "feedback_acerto_botao_bg": ft.Colors.GREEN_100, "feedback_erro_botao_bg": ft.Colors.RED_100, "container_treino_bg": ft.Colors.WHITE, "container_treino_borda": ft.Colors.BLUE_600, "textfield_border_color": ft.Colors.BLUE_600, "dropdown_border_color": ft.Colors.BLUE_600, "progressbar_cor": ft.Colors.BLUE_600, "progressbar_bg_cor": ft.Colors.BLUE_100, "update_icon_color_available": ft.Colors.ORANGE_ACCENT_700, "update_icon_color_uptodate": ft.Colors.GREEN_800, "update_icon_color_error": ft.Colors.RED_800},
     "escuro_moderno": {
         "fundo_pagina": ft.Colors.TEAL_900, # Fallback for page.bgcolor
         "gradient_page_bg": ft.LinearGradient(
@@ -298,7 +357,10 @@ TEMAS = {
         "textfield_border_color": ft.Colors.CYAN_ACCENT_700,
         "dropdown_border_color": ft.Colors.CYAN_ACCENT_700,
         "progressbar_cor": ft.Colors.CYAN_ACCENT_400,
-        "progressbar_bg_cor": ft.Colors.with_opacity(0.2, ft.Colors.WHITE)
+        "progressbar_bg_cor": ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
+        "update_icon_color_available": ft.Colors.YELLOW_ACCENT_400,
+        "update_icon_color_uptodate": ft.Colors.GREEN_ACCENT_400,
+        "update_icon_color_error": ft.Colors.RED_ACCENT_400
     }
 }
 tema_ativo_nome = "colorido" # Default theme
@@ -659,7 +721,13 @@ def build_tela_apresentacao(page: Page):
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
             ElevatedButton("Quiz com Fórmulas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/formula_quiz_setup"), tooltip="Crie ou selecione um quiz baseado em fórmulas notáveis.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")), # Rota e texto atualizados
             Container(height=20, margin=ft.margin.only(top=10)),
-        ] + controles_botoes_tema,
+        ] + controles_botoes_tema + [
+            Container(height=10),
+            update_action_button, # Adiciona o botão de "Atualizar Agora" se visível
+            Container(height=5),
+            # Removido o texto de status daqui, pois está na AppBar
+            # Row([update_status_icon, Container(width=5), update_status_text], alignment=MainAxisAlignment.CENTER, vertical_alignment=CrossAxisAlignment.CENTER)
+        ],
         alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL,
         # Adicionar scroll caso o conteúdo fique muito grande com os botões de tema
         scroll=ScrollMode.AUTO
@@ -1255,6 +1323,159 @@ def main(page: Page):
     page.window_height = 800
     page.fonts = {"RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"}
 
+    # --- Elementos Globais da UI para Atualização ---
+    update_status_icon = ft.Icon(name=ft.icons.SYNC_PROBLEM, color=obter_cor_do_tema_ativo("update_icon_color_error"), tooltip=update_check_status_message, size=20)
+    update_status_text = ft.Text(f"v{APP_CURRENT_VERSION} ({local_git_commit})", size=10, color=obter_cor_do_tema_ativo("texto_padrao"), opacity=0.7)
+    update_action_button = ft.ElevatedButton(
+        text="Atualizar Agora",
+        icon=ft.icons.UPDATE,
+        visible=False,
+        on_click=lambda _: show_update_dialog(page), # Definiremos show_update_dialog depois
+        bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"),
+        color=obter_cor_do_tema_ativo("botao_destaque_texto")
+    )
+
+    def update_ui_elements_for_update_status():
+        """Atualiza os elementos da UI com base no status da verificação de atualização."""
+        global update_available, latest_version_tag, update_check_status_message, APP_CURRENT_VERSION, local_git_commit
+
+        update_status_text.value = f"v{APP_CURRENT_VERSION} ({local_git_commit.splitlines()[0] if local_git_commit else 'N/A'}) - {update_check_status_message}"
+        update_status_text.color = obter_cor_do_tema_ativo("texto_padrao") # Resetar cor
+        update_action_button.visible = False # Esconder por padrão
+
+        if "Erro ao verificar" in update_check_status_message or "Erro inesperado" in update_check_status_message:
+            update_status_icon.name = ft.icons.ERROR_OUTLINE
+            update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_error")
+            update_status_icon.tooltip = update_check_status_message
+        elif update_available:
+            update_status_icon.name = ft.icons.NEW_RELEASES
+            update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_available")
+            update_status_icon.tooltip = f"Nova versão {latest_version_tag} disponível!"
+            update_status_text.value = f"Atualização: v{APP_CURRENT_VERSION} -> {latest_version_tag}"
+            update_action_button.visible = True
+            update_action_button.bgcolor = obter_cor_do_tema_ativo("botao_destaque_bg")
+            update_action_button.color = obter_cor_do_tema_ativo("botao_destaque_texto")
+
+        else: # Nenhuma atualização ou já atualizado
+            update_status_icon.name = ft.icons.CHECK_CIRCLE_OUTLINE
+            update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_uptodate")
+            update_status_icon.tooltip = "Você está na versão mais recente."
+
+        # Atualiza o botão de atualização se estiver na tela de apresentação
+        # (ou em qualquer outra tela que o contenha - precisa ser adicionado lá também)
+        # Esta é uma forma simples, idealmente o botão seria parte de um layout persistente ou AppBar
+        if page.route == "/":
+             # A lógica de reconstrução da tela de apresentação precisará adicionar este botão
+             # ou teremos que encontrar o botão no `page.views` e atualizá-lo.
+             # Por agora, vamos assumir que o botão é atualizado ao reconstruir a view.
+             pass
+
+
+        if page.controls: # Se houver AppBar, atualiza lá
+            app_bar = page.appbar
+            if app_bar and hasattr(app_bar, 'actions'):
+                # Encontrar e atualizar os elementos na AppBar
+                for action_item in app_bar.actions:
+                    if isinstance(action_item, ft.Row) and len(action_item.controls) > 1:
+                        icon_ctrl = action_item.controls[0]
+                        text_ctrl = action_item.controls[1]
+                        if isinstance(icon_ctrl, ft.Icon) and isinstance(text_ctrl, ft.Text):
+                            icon_ctrl.name = update_status_icon.name
+                            icon_ctrl.color = update_status_icon.color
+                            icon_ctrl.tooltip = update_status_icon.tooltip
+                            text_ctrl.value = update_status_text.value
+                            text_ctrl.color = update_status_text.color
+                            break
+        page.update()
+
+    def run_update_check_and_ui_refresh(page_ref: Page):
+        """Executa a verificação de atualização e atualiza a UI."""
+        check_for_updates()
+        update_ui_elements_for_update_status()
+        page_ref.update()
+
+
+    # --- Diálogo de Confirmação e Lógica de Atualização ---
+    update_progress_indicator = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
+    update_dialog_content_text = Text("Uma nova versão do aplicativo está disponível. Deseja atualizar agora? O aplicativo precisará ser reiniciado.")
+
+    def perform_update_action(e, page_ref: Page, dialog_ref: ft.AlertDialog):
+        global update_check_status_message
+
+        dialog_ref.content = Column([
+            update_dialog_content_text,
+            Container(height=10),
+            Row([update_progress_indicator, Text("Atualizando...")], alignment=MainAxisAlignment.CENTER)
+        ])
+        update_progress_indicator.visible = True
+        dialog_ref.actions = [] # Remover botões durante o processo
+        page_ref.update()
+
+        try:
+            # 1. Verificar se é um repositório git
+            if not os.path.exists(".git"):
+                update_dialog_content_text.value = "Erro: Não é um repositório git. A atualização automática não pode prosseguir."
+                update_progress_indicator.visible = False
+                dialog_ref.actions = [ft.TextButton("OK", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
+                page_ref.update()
+                return
+
+            # 2. Salvar quaisquer alterações locais não commitadas (stash)
+            subprocess.run(['git', 'stash', 'push', '-u', '-m', 'autostash_before_update'], check=True, capture_output=True)
+            print("Git stash push executado.")
+
+            # 3. Puxar as últimas alterações do repositório (branch padrão)
+            pull_result = subprocess.run(['git', 'pull', '--ff-only'], check=True, capture_output=True, text=True) # --ff-only para evitar merges
+            print(f"Git pull executado: {pull_result.stdout}")
+
+            # 4. Tentar aplicar o stash de volta (opcional, mas bom para manter alterações locais)
+            #    Se houver conflitos, o usuário precisará resolver manualmente após reiniciar.
+            subprocess.run(['git', 'stash', 'pop'], capture_output=True) # Não checa 'check=True' aqui, pois pode falhar com conflitos
+            print("Git stash pop tentado.")
+
+            update_dialog_content_text.value = "Atualização concluída com sucesso! Por favor, reinicie o aplicativo para aplicar as alterações."
+            update_check_status_message = "Atualizado! Reinicie." # Atualiza a mensagem global também
+
+        except subprocess.CalledProcessError as err:
+            error_message = f"Erro durante a atualização: {err.stderr or err.stdout or str(err)}"
+            print(error_message)
+            update_dialog_content_text.value = error_message
+            # Tentar reverter o stash se o pull falhou
+            subprocess.run(['git', 'stash', 'pop'], capture_output=True)
+
+        except FileNotFoundError:
+            update_dialog_content_text.value = "Erro: Git não encontrado. A atualização não pode prosseguir."
+        except Exception as ex:
+            update_dialog_content_text.value = f"Erro inesperado: {str(ex)}"
+
+        update_progress_indicator.visible = False
+        dialog_ref.actions = [ft.TextButton("OK, Reiniciar Manualmente", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
+        page_ref.update()
+
+
+    update_dialog = ft.AlertDialog(
+        modal=True,
+        title=Text("Confirmar Atualização"),
+        content=update_dialog_content_text, # Usar o controle de texto
+        actions=[
+            ft.TextButton("Sim, Atualizar", on_click=lambda e: perform_update_action(e, page, update_dialog)),
+            ft.TextButton("Agora Não", on_click=lambda e: close_dialog(e, page, update_dialog)),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+
+    def close_dialog(e, page_ref: Page, dialog_ref: ft.AlertDialog):
+        dialog_ref.open = False
+        page_ref.update()
+
+    def show_update_dialog(page_ref: Page):
+        page_ref.dialog = update_dialog
+        update_dialog.open = True
+        page_ref.update()
+
+    # --- Fim dos Elementos de Atualização ---
+
+
     def route_change(route_obj):
         page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
         page.views.clear()
@@ -1262,38 +1483,56 @@ def main(page: Page):
         page.views.append(
             View(
                 route="/",
-                controls=[build_tela_apresentacao(page)],
+                controls=[build_tela_apresentacao(page)], # build_tela_apresentacao precisará ser modificado
                 vertical_alignment=MainAxisAlignment.CENTER,
-                horizontal_alignment=CrossAxisAlignment.CENTER
+                horizontal_alignment=CrossAxisAlignment.CENTER,
+                # Adicionando AppBar simples para mostrar status da atualização
+                appbar=ft.AppBar(
+                    title=Text("Quiz Mestre da Tabuada", color=obter_cor_do_tema_ativo("texto_titulos")),
+                    center_title=True,
+                    bgcolor=obter_cor_do_tema_ativo("fundo_pagina"),
+                    actions=[
+                        Row([
+                            update_status_icon,
+                            Container(width=5),
+                            update_status_text,
+                            Container(width=10)
+                        ], alignment=MainAxisAlignment.CENTER, vertical_alignment=CrossAxisAlignment.CENTER),
+                        # update_action_button # Poderia ser adicionado aqui também, se desejado
+                    ]
+                )
             )
         )
         if page.route == "/quiz":
-            page.views.append(View("/quiz", [build_tela_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+            page.views.append(View("/quiz", [build_tela_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar)) # Reutiliza AppBar
         elif page.route == "/quiz_invertido":
-            page.views.append(View("/quiz_invertido", [build_tela_quiz_invertido(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+            page.views.append(View("/quiz_invertido", [build_tela_quiz_invertido(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
         elif page.route == "/treino":
-            page.views.append(View("/treino", [build_tela_treino(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+            page.views.append(View("/treino", [build_tela_treino(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
         elif page.route == "/estatisticas":
-            page.views.append(View("/estatisticas", [build_tela_estatisticas(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+            page.views.append(View("/estatisticas", [build_tela_estatisticas(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
         elif page.route == "/formula_quiz_setup":
-            page.views.append(View("/formula_quiz_setup", [build_tela_formula_quiz_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+            page.views.append(View("/formula_quiz_setup", [build_tela_formula_quiz_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
         elif page.route == "/custom_quiz":
-            page.views.append(View("/custom_quiz", [build_tela_custom_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER))
+            page.views.append(View("/custom_quiz", [build_tela_custom_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
 
+        # Garantir que a UI de atualização seja atualizada na mudança de rota
+        # Isso é importante porque a AppBar é reconstruída.
+        update_ui_elements_for_update_status()
         page.update()
 
-    def view_pop(view_instance): # view_instance é a view que foi popada pelo Flet
-        # A pilha page.views já foi alterada pelo Flet antes de chamar on_view_pop.
-        # Não devemos chamar page.views.pop() novamente aqui.
-        if page.views: # Garante que a lista de views não está vazia (deve sempre ter a base)
-            top_view = page.views[-1] # A nova view que ficou no topo
+    def view_pop(view_instance):
+        if page.views:
+            top_view = page.views[-1]
             page.go(top_view.route)
-        # Se page.views estiver vazia, page.go('/') seria uma opção,
-        # mas o Flet pode ter um comportamento padrão (fechar app se for a última view).
-        # Com a view base '/', page.views nunca deve ficar vazia ao popar uma view sobre ela.
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
+
+    # Iniciar a verificação de atualização em uma thread separada para não bloquear a UI
+    update_thread = threading.Thread(target=run_update_check_and_ui_refresh, args=(page,), daemon=True)
+    update_thread.start()
+
     page.go("/")
 
 ft.app(target=main)
