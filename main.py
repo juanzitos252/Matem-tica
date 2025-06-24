@@ -3,7 +3,7 @@ from flet import (
     Page, Text, ElevatedButton, Row, Column, TextField, View, Container,
     MainAxisAlignment, CrossAxisAlignment, FontWeight, alignment,
     TextAlign, ScrollMode, padding, border, KeyboardType,
-    Animation, AnimationCurve, ProgressBar # Margin removida
+    Animation, AnimationCurve, ProgressBar, Icons # Margin removida
 )
 import random
 import time
@@ -1324,11 +1324,11 @@ def main(page: Page):
     page.fonts = {"RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"}
 
     # --- Elementos Globais da UI para Atualização ---
-    update_status_icon = ft.Icon(name=ft.icons.SYNC_PROBLEM, color=obter_cor_do_tema_ativo("update_icon_color_error"), tooltip=update_check_status_message, size=20)
+    update_status_icon = ft.Icon(name=Icons.SYNC_PROBLEM, color=obter_cor_do_tema_ativo("update_icon_color_error"), tooltip=update_check_status_message, size=20)
     update_status_text = ft.Text(f"v{APP_CURRENT_VERSION} ({local_git_commit})", size=10, color=obter_cor_do_tema_ativo("texto_padrao"), opacity=0.7)
     update_action_button = ft.ElevatedButton(
         text="Atualizar Agora",
-        icon=ft.icons.UPDATE,
+        icon=Icons.UPDATE,
         visible=False,
         on_click=lambda _: show_update_dialog(page), # Definiremos show_update_dialog depois
         bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"),
@@ -1344,11 +1344,11 @@ def main(page: Page):
         update_action_button.visible = False # Esconder por padrão
 
         if "Erro ao verificar" in update_check_status_message or "Erro inesperado" in update_check_status_message:
-            update_status_icon.name = ft.icons.ERROR_OUTLINE
+            update_status_icon.name = Icons.ERROR_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_error")
             update_status_icon.tooltip = update_check_status_message
         elif update_available:
-            update_status_icon.name = ft.icons.NEW_RELEASES
+            update_status_icon.name = Icons.NEW_RELEASES
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_available")
             update_status_icon.tooltip = f"Nova versão {latest_version_tag} disponível!"
             update_status_text.value = f"Atualização: v{APP_CURRENT_VERSION} -> {latest_version_tag}"
@@ -1357,7 +1357,7 @@ def main(page: Page):
             update_action_button.color = obter_cor_do_tema_ativo("botao_destaque_texto")
 
         else: # Nenhuma atualização ou já atualizado
-            update_status_icon.name = ft.icons.CHECK_CIRCLE_OUTLINE
+            update_status_icon.name = Icons.CHECK_CIRCLE_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_uptodate")
             update_status_icon.tooltip = "Você está na versão mais recente."
 
