@@ -527,8 +527,8 @@ TEMAS = {
     "escuro_moderno": {
         "fundo_pagina": ft.Colors.TEAL_900, # Fallback for page.bgcolor
         "gradient_page_bg": ft.LinearGradient(
-            begin=alignment.top_center, # Changed from top_left
-            end=alignment.bottom_center,  # Changed from bottom_right
+            begin=ft.alignment.top_center, # Changed from top_left
+            end=ft.alignment.bottom_center,  # Changed from bottom_right
             colors=[ft.Colors.INDIGO_900, ft.Colors.PURPLE_800, ft.Colors.TEAL_800], # Slightly adjusted shades for harmony
             stops=[0.1, 0.6, 1.0]
         ),
@@ -540,18 +540,18 @@ TEMAS = {
         "botao_opcao_quiz_texto": ft.Colors.WHITE,
         "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400,
         "botao_destaque_texto": ft.Colors.WHITE,
-        "botao_tema_bg": ft.colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
+        "botao_tema_bg": ft.Colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
         "botao_tema_texto": ft.Colors.CYAN_ACCENT_100,                 # For theme selection buttons text
         "feedback_acerto_texto": ft.Colors.GREEN_ACCENT_200,
         "feedback_erro_texto": ft.Colors.RED_ACCENT_100,
-        "feedback_acerto_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
-        "feedback_erro_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
-        "container_treino_bg": ft.colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
+        "feedback_acerto_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
+        "feedback_erro_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
+        "container_treino_bg": ft.Colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
         "container_treino_borda": ft.Colors.CYAN_ACCENT_700,
         "textfield_border_color": ft.Colors.CYAN_ACCENT_700,
         "dropdown_border_color": ft.Colors.CYAN_ACCENT_700,
         "progressbar_cor": ft.Colors.CYAN_ACCENT_400,
-        "progressbar_bg_cor": ft.colors.with_opacity(0.2, ft.Colors.WHITE),
+        "progressbar_bg_cor": ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
         "update_icon_color_available": ft.Colors.YELLOW_ACCENT_400,
         "update_icon_color_uptodate": ft.Colors.GREEN_ACCENT_400,
         "update_icon_color_error": ft.Colors.RED_ACCENT_400
@@ -571,7 +571,7 @@ BOTAO_LARGURA_PRINCIPAL = 220
 BOTAO_ALTURA_PRINCIPAL = 50
 BOTAO_LARGURA_OPCAO_QUIZ = 150
 BOTAO_ALTURA_OPCAO_QUIZ = 50
-PADDING_VIEW = padding.symmetric(horizontal=25, vertical=20)
+PADDING_VIEW = ft.padding.symmetric(horizontal=25, vertical=20)
 ESPACAMENTO_COLUNA_GERAL = 15
 ESPACAMENTO_BOTOES_APRESENTACAO = 10
 ANIMACAO_FADE_IN_LENTO = Animation(400, AnimationCurve.EASE_IN)
@@ -842,7 +842,7 @@ def build_tela_formula_quiz_setup(page: Page):
             Row([var_a_range_field, var_b_range_field], spacing=10, alignment=MainAxisAlignment.CENTER),
             Container(height=10),
             save_button,
-            Container(height=15, border=ft.border.only(bottom=ft.BorderSide(1, obter_cor_do_tema_ativo("texto_padrao"))), margin=ft.margin.symmetric(vertical=10)),
+            Container(height=15, border=ft.Border.only(bottom=ft.BorderSide(1, obter_cor_do_tema_ativo("texto_padrao"))), margin=ft.margin.symmetric(vertical=10)),
             Text("2. Ou inicie um Quiz com uma Configuração Salva:", size=18, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao")),
             saved_quiz_configs_dropdown,
             Container(height=10),
@@ -1078,10 +1078,10 @@ def build_tela_treino(page: Page):
         txt_resumo.value = f"Você acertou {acertos} de {len(campos_tabuada_refs)}!"; btn_verificar.disabled = True; page.update()
     btn_verificar.on_click = handle_verificar_treino
     btn_voltar = ElevatedButton("Voltar ao Menu", on_click=lambda _: page.go("/"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, tooltip="Retornar à tela inicial.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
-    cont_tabuada = Container(content=coluna_itens_tabuada, border=border.all(2, obter_cor_do_tema_ativo("container_treino_borda")), border_radius=8, padding=padding.all(15), width=360, height=420, bgcolor=obter_cor_do_tema_ativo("container_treino_bg"))
+    cont_tabuada = Container(content=coluna_itens_tabuada, border=ft.border.all(2, obter_cor_do_tema_ativo("container_treino_borda")), border_radius=8, padding=ft.padding.all(15), width=360, height=420, bgcolor=obter_cor_do_tema_ativo("container_treino_bg"))
     conteudo_treino = Column([titulo_treino, Container(height=10), cont_tabuada, Container(height=10), btn_verificar, Container(height=10), txt_resumo, Container(height=15), btn_voltar], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL, scroll=ScrollMode.AUTO)
 
-    view_container = Container(content=conteudo_treino, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    view_container = Container(content=conteudo_treino, alignment=ft.alignment.center, expand=True, padding=PADDING_VIEW)
     if tema_ativo_nome == "escuro_moderno":
         view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
         view_container.bgcolor = None
@@ -1158,7 +1158,7 @@ def build_tela_estatisticas(page: Page):
         horizontal_alignment=CrossAxisAlignment.CENTER,
         spacing=ESPACAMENTO_COLUNA_GERAL
     )
-    view_container = Container(content=conteudo_stats, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    view_container = Container(content=conteudo_stats, alignment=ft.alignment.center, expand=True, padding=PADDING_VIEW)
     if tema_ativo_nome == "escuro_moderno":
         view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
         view_container.bgcolor = None
@@ -1176,7 +1176,7 @@ def build_tela_custom_quiz(page: Page):
             Text("Erro: Nenhuma fórmula personalizada selecionada.", color=obter_cor_do_tema_ativo("feedback_erro_texto"), size=20),
             ElevatedButton("Voltar para Seleção", on_click=lambda _: page.go("/custom_formula_setup"), bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
         ], alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=20)
-        return Container(content=error_content, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+        return Container(content=error_content, alignment=ft.alignment.center, expand=True, padding=PADDING_VIEW)
 
     formula_obj = current_custom_formula_for_quiz
     texto_pergunta = Text(size=24, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, color=obter_cor_do_tema_ativo("texto_titulos"), opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO)
@@ -1585,10 +1585,10 @@ def build_tela_divisao_diretamente_proporcional(page: Page):
             Text("Insira as Partes e suas Grandezas:", size=18, color=obter_cor_do_tema_ativo("texto_padrao")),
             Container(
                 content=grandezas_column,
-                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border=ft.border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
                 border_radius=5,
                 padding=10,
-                margin=margin.symmetric(vertical=5)
+                margin=ft.margin.symmetric(vertical=5)
             ),
             Row([add_grandeza_button, remove_grandeza_button], alignment=MainAxisAlignment.CENTER, spacing=10),
             Container(height=15),
@@ -1598,10 +1598,10 @@ def build_tela_divisao_diretamente_proporcional(page: Page):
             Container(height=10),
             Container(
                 content=resultados_column,
-                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border=ft.border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
                 border_radius=5,
                 padding=10,
-                margin=margin.symmetric(vertical=5),
+                margin=ft.margin.symmetric(vertical=5),
                 visible= True # Sempre visível, mas conteúdo é dinâmico
             ),
             Container(height=15),
@@ -1792,8 +1792,8 @@ def build_tela_divisao_inversamente_proporcional(page: Page):
             Text("Insira as Partes e suas Grandezas (valores ≠ 0):", size=18, color=obter_cor_do_tema_ativo("texto_padrao")),
             Container(
                 content=grandezas_column_inv,
-                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
-                border_radius=5, padding=10, margin=margin.symmetric(vertical=5)
+                border=ft.border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border_radius=5, padding=10, margin=ft.margin.symmetric(vertical=5)
             ),
             Row([add_grandeza_button_inv, remove_grandeza_button_inv], alignment=MainAxisAlignment.CENTER, spacing=10),
             Container(height=15),
@@ -1803,8 +1803,8 @@ def build_tela_divisao_inversamente_proporcional(page: Page):
             Container(height=10),
             Container(
                 content=resultados_column_inv,
-                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
-                border_radius=5, padding=10, margin=margin.symmetric(vertical=5)
+                border=ft.border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border_radius=5, padding=10, margin=ft.margin.symmetric(vertical=5)
             ),
             Container(height=15),
             back_button_inv,
