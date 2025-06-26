@@ -1,9 +1,9 @@
 import flet as ft
 from flet import (
-    Page, Text, ElevatedButton, Row, Column, TextField, View, Container,
+    Page, Text, ElevatedButton, Row, Column, TextField, View, Container, Dropdown,
     MainAxisAlignment, CrossAxisAlignment, FontWeight, alignment,
     TextAlign, ScrollMode, padding, border, KeyboardType,
-    Animation, AnimationCurve, ProgressBar, Icons # Margin removida
+    Animation, AnimationCurve, ProgressBar, Icons, LinearGradient
 )
 import random
 import time
@@ -29,9 +29,9 @@ def calc_produto_soma_diferenca(a: int, b: int) -> int:
     """Calcula a^2 - b^2."""
     return a**2 - b**2
 
-def calc_raiz_soma_diferenca(val_a: int, val_b: int) -> int:
-    """Calcula a - b, onde val_a e val_b são os números DENTRO das raízes na pergunta."""
-    return val_a - val_b
+def calc_raiz_soma_diferenca(a: int, b: int) -> int:
+    """Calcula a - b, onde a e b são os números DENTRO das raízes na pergunta."""
+    return a - b
 
 # --- Definições da Lista de Fórmulas Notáveis ---
 FORMULAS_NOTAVEIS = [
@@ -273,13 +273,121 @@ custom_formulas_data = [] # Lista para armazenar as fórmulas personalizadas
 current_custom_formula_for_quiz = None # Armazena a fórmula selecionada para o quiz personalizado
 
 # --- Constantes e Lógica de Atualização ---
-GITHUB_REPO_URL = "https://api.github.com/repos/desenvolvedorXXX/quiz_app_flet/releases/latest" # Substitua pelo seu URL
+GITHUB_REPO_URL = "https://api.github.com/repos/desenvolvedorXXX/quiz_app_flet/releases/latest" # !!! IMPORTANTE: Substitua pelo seu URL do repositório GitHub !!!
 APP_CURRENT_VERSION = "0.1.0" # Defina a versão atual do seu aplicativo
 
 # Variáveis globais para status da atualização
 update_available = False
 latest_version_tag = ""
 update_check_status_message = "Verificando atualizações..."
+
+# --- Elementos Globais da UI para Atualização (Definidos antecipadamente) ---
+# Estes são definidos aqui para estarem disponíveis globalmente quando as telas são construídas.
+# Suas propriedades (cor, texto, visibilidade) serão atualizadas dinamicamente.
+
+update_status_icon = ft.Icon(
+    name=ft.icons.SYNC_PROBLEM, # Ícone inicial
+    # A cor será definida dinamicamente com base no tema e status
+    tooltip="Verificando atualizações...",
+    size=20
+)
+update_status_text = ft.Text(
+    f"v{APP_CURRENT_VERSION}", # Texto inicial
+    size=10,
+    # A cor será definida dinamicamente
+    opacity=0.7
+)
+update_action_button = ft.ElevatedButton(
+    text="Atualizar Agora",
+    icon=ft.icons.UPDATE,
+    visible=False, # Começa invisível
+    # on_click será definido depois (show_update_dialog)
+    # bgcolor e color serão definidos dinamicamente
+)
+
+# --- Diálogo de Confirmação e Lógica de Atualização (Definidos antecipadamente) ---
+update_progress_indicator = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
+update_dialog_content_text = Text("Uma nova versão do aplicativo está disponível. Deseja atualizar agora? O aplicativo precisará ser reiniciado.")
+
+# Placeholder para o diálogo, será totalmente definido em `main` ou em uma função de setup se necessário
+update_dialog = None # Será um ft.AlertDialog
+
+def close_dialog(e, page_ref: ft.Page, dialog_ref: ft.AlertDialog):
+    if dialog_ref:
+        dialog_ref.open = False
+    if page_ref: # Adicionada verificação para page_ref
+        page_ref.update()
+
+def perform_update_action(e, page_ref: ft.Page, dialog_ref: ft.AlertDialog):
+    global update_check_status_message
+
+    if not dialog_ref: # Adicionada verificação
+        return
+
+    dialog_ref.content = Column([
+        update_dialog_content_text,
+        Container(height=10),
+        Row([update_progress_indicator, Text("Atualizando...")], alignment=MainAxisAlignment.CENTER)
+    ])
+    update_progress_indicator.visible = True
+    dialog_ref.actions = [] # Remover botões durante o processo
+    if page_ref: page_ref.update()
+
+    try:
+        if not os.path.exists(".git"):
+            update_dialog_content_text.value = "Erro: Não é um repositório git. A atualização automática não pode prosseguir."
+            update_progress_indicator.visible = False
+            dialog_ref.actions = [ft.TextButton("OK", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
+            if page_ref: page_ref.update()
+            return
+
+        subprocess.run(['git', 'stash', 'push', '-u', '-m', 'autostash_before_update'], check=True, capture_output=True)
+        print("Git stash push executado.")
+
+        pull_result = subprocess.run(['git', 'pull', '--ff-only'], check=True, capture_output=True, text=True)
+        print(f"Git pull executado: {pull_result.stdout}")
+
+        subprocess.run(['git', 'stash', 'pop'], capture_output=True)
+        print("Git stash pop tentado.")
+
+        update_dialog_content_text.value = "Atualização concluída com sucesso! Por favor, reinicie o aplicativo para aplicar as alterações."
+        update_check_status_message = "Atualizado! Reinicie."
+
+    except subprocess.CalledProcessError as err:
+        error_message = f"Erro durante a atualização: {err.stderr or err.stdout or str(err)}"
+        print(error_message)
+        update_dialog_content_text.value = error_message
+        subprocess.run(['git', 'stash', 'pop'], capture_output=True)
+
+    except FileNotFoundError:
+        update_dialog_content_text.value = "Erro: Git não encontrado. A atualização não pode prosseguir."
+    except Exception as ex:
+        update_dialog_content_text.value = f"Erro inesperado: {str(ex)}"
+
+    update_progress_indicator.visible = False
+    dialog_ref.actions = [ft.TextButton("OK, Reiniciar Manualmente", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
+    if page_ref: page_ref.update()
+
+
+def show_update_dialog(page_ref: ft.Page): # page_ref pode ser None se chamado antes da página estar pronta
+    global update_dialog # Acessa o update_dialog global
+    if not page_ref or not update_dialog: # Adicionada verificação para page_ref e update_dialog
+        print("Página ou diálogo de atualização não pronto para show_update_dialog")
+        return
+
+    # Certificar que o conteúdo e ações do diálogo estão corretos antes de mostrar
+    update_dialog.content = update_dialog_content_text
+    update_dialog.actions = [
+            ft.TextButton("Sim, Atualizar", on_click=lambda e: perform_update_action(e, page_ref, update_dialog)),
+            ft.TextButton("Agora Não", on_click=lambda e: close_dialog(e, page_ref, update_dialog)),
+        ]
+    update_dialog.title=Text("Confirmar Atualização")
+    update_dialog.modal=True
+    update_dialog.actions_alignment=ft.MainAxisAlignment.END
+
+    page_ref.dialog = update_dialog
+    update_dialog.open = True
+    page_ref.update()
 
 def get_local_git_commit_hash():
     """Obtém o hash do commit local."""
@@ -301,6 +409,7 @@ local_git_commit = get_local_git_commit_hash()
 
 def check_for_updates():
     global update_available, latest_version_tag, update_check_status_message, APP_CURRENT_VERSION
+    update_check_status_message = "Verificando atualizações..." # Reset message before check
     try:
         response = requests.get(GITHUB_REPO_URL, timeout=10)
         response.raise_for_status()
@@ -319,12 +428,26 @@ def check_for_updates():
             update_available = False
             update_check_status_message = "Você está na versão mais recente."
             print("Nenhuma atualização encontrada.")
-    except requests.exceptions.RequestException as e:
-        update_check_status_message = "Erro ao verificar atualizações."
-        print(f"Erro ao verificar atualizações: {e}")
-    except Exception as e:
-        update_check_status_message = "Erro inesperado na verificação."
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            update_check_status_message = "Erro: URL de atualização não encontrada (404)."
+            print(f"Erro 404: A URL {GITHUB_REPO_URL} não foi encontrada. Verifique a configuração GITHUB_REPO_URL.")
+        elif e.response.status_code == 403:
+            update_check_status_message = "Erro: Acesso proibido à URL de atualização (403)."
+            print(f"Erro 403: Acesso proibido à URL {GITHUB_REPO_URL}. Verifique as permissões do token ou do repositório.")
+        else:
+            update_check_status_message = f"Erro HTTP: {e.response.status_code} ao verificar atualizações."
+            print(f"Erro HTTP {e.response.status_code} ao verificar atualizações: {e}")
+    except requests.exceptions.ConnectionError:
+        update_check_status_message = "Erro: Não foi possível conectar para verificar atualizações."
+        print("Erro de conexão ao verificar atualizações. Verifique sua internet.")
+    except requests.exceptions.Timeout:
+        update_check_status_message = "Erro: Timeout ao verificar atualizações."
+        print("Timeout ao verificar atualizações.")
+    except Exception as e: # Captura outras exceções genéricas
+        update_check_status_message = "Erro inesperado na verificação de atualizações."
         print(f"Erro inesperado ao verificar atualizações: {e}")
+
 
 # --- Temas e Gerenciamento de Tema ---
 TEMAS = {
@@ -346,18 +469,18 @@ TEMAS = {
         "botao_opcao_quiz_texto": ft.Colors.WHITE,
         "botao_destaque_bg": ft.Colors.TEAL_ACCENT_400,
         "botao_destaque_texto": ft.Colors.WHITE,
-        "botao_tema_bg": ft.Colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
+        "botao_tema_bg": ft.colors.with_opacity(0.2, ft.Colors.WHITE), # For theme selection buttons
         "botao_tema_texto": ft.Colors.CYAN_ACCENT_100,                 # For theme selection buttons text
         "feedback_acerto_texto": ft.Colors.GREEN_ACCENT_200,
         "feedback_erro_texto": ft.Colors.RED_ACCENT_100,
-        "feedback_acerto_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
-        "feedback_erro_botao_bg": ft.Colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
-        "container_treino_bg": ft.Colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
+        "feedback_acerto_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.GREEN_ACCENT_100),
+        "feedback_erro_botao_bg": ft.colors.with_opacity(0.3, ft.Colors.RED_ACCENT_100),
+        "container_treino_bg": ft.colors.with_opacity(0.1, ft.Colors.WHITE), # Slightly more subtle frosted glass
         "container_treino_borda": ft.Colors.CYAN_ACCENT_700,
         "textfield_border_color": ft.Colors.CYAN_ACCENT_700,
         "dropdown_border_color": ft.Colors.CYAN_ACCENT_700,
         "progressbar_cor": ft.Colors.CYAN_ACCENT_400,
-        "progressbar_bg_cor": ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
+        "progressbar_bg_cor": ft.colors.with_opacity(0.2, ft.Colors.WHITE),
         "update_icon_color_available": ft.Colors.YELLOW_ACCENT_400,
         "update_icon_color_uptodate": ft.Colors.GREEN_ACCENT_400,
         "update_icon_color_error": ft.Colors.RED_ACCENT_400
@@ -439,7 +562,7 @@ def mudar_tema(page: Page, novo_tema_nome: str):
 # --- Funções Auxiliares para Fórmulas ---
 # (parse_variable_ranges pode ser mantido se for útil para os ranges de 'a' e 'b' das fórmulas notáveis)
 def parse_variable_ranges(range_str: str, default_min=1, default_max=10):
-    """Converte uma string como '1-10' em {'min': 1, 'max': 10}. Limita ao intervalo 1-100."""
+    """Converte uma string como '1-10' em {'min': 1, 'max': 10}. Limita ao intervalo 1-10."""
     try:
         parts = range_str.split('-')
         min_val = int(parts[0].strip())
@@ -462,8 +585,6 @@ def parse_variable_ranges(range_str: str, default_min=1, default_max=10):
     except:
         # Retorna o padrão, mas também limitado
         return {'min': max(1, min(default_min, 10)), 'max': max(1, min(default_max, 10))}
-
-# (A linha "from formula_definitions import FORMULAS_NOTAVEIS, get_formula_definition" foi removida pois as definições estão agora neste arquivo)
 
 # --- Tela de Configuração de Quiz com Fórmula Notável ---
 def build_tela_formula_quiz_setup(page: Page):
@@ -508,11 +629,10 @@ def build_tela_formula_quiz_setup(page: Page):
     feedback_text = Text("", color=obter_cor_do_tema_ativo("texto_padrao"))
 
     # Dropdown para listar configurações de quiz salvas
-    # (Anteriormente 'formulas_dropdown', agora 'saved_quiz_configs_dropdown')
     saved_quiz_configs_dropdown = Dropdown(
         label="Ou selecione uma configuração de quiz salva",
         width=350,
-        options=[ft.dropdown.Option(key=cfg['name'], text=cfg['name']) for cfg in custom_formulas_data], # custom_formulas_data será adaptado
+        options=[ft.dropdown.Option(key=cfg['name'], text=cfg['name']) for cfg in custom_formulas_data],
         border_color=obter_cor_do_tema_ativo("dropdown_border_color"),
         color=obter_cor_do_tema_ativo("texto_padrao")
     )
@@ -549,13 +669,11 @@ def build_tela_formula_quiz_setup(page: Page):
             page.update()
 
     formula_type_dropdown.on_change = on_formula_type_change
-    # Inicializar visibilidade dos campos de range (nenhuma fórmula selecionada inicialmente)
     var_a_range_field.visible = False
     var_b_range_field.visible = False
 
 
     def update_saved_quiz_configs_dropdown():
-        # custom_formulas_data agora armazena configurações de quiz notável
         saved_quiz_configs_dropdown.options = [
             ft.dropdown.Option(key=cfg['name'], text=cfg['name']) for cfg in custom_formulas_data
         ]
@@ -567,10 +685,8 @@ def build_tela_formula_quiz_setup(page: Page):
             saved_quiz_configs_dropdown.value = None
         saved_quiz_configs_dropdown.update()
 
-    # Handler para SALVAR uma CONFIGURAÇÃO de quiz com fórmula notável
-    # (Adaptado de save_custom_formula_handler)
     def save_quiz_config_handler(e):
-        global custom_formulas_data # Esta lista agora armazena configs de quiz notável
+        global custom_formulas_data
 
         config_name = quiz_config_name_field.value.strip()
         selected_formula_id = formula_type_dropdown.value
@@ -593,7 +709,6 @@ def build_tela_formula_quiz_setup(page: Page):
             page.update()
             return
 
-        # Obter ranges das variáveis visíveis
         ranges = {}
         definition = get_formula_definition(selected_formula_id)
         if definition:
@@ -602,16 +717,10 @@ def build_tela_formula_quiz_setup(page: Page):
             if 'b' in definition.get('variables', []):
                 ranges['b'] = parse_variable_ranges(var_b_range_field.value)
 
-        # Validar ranges com base nas constraints da fórmula (a ser feito na Etapa 5 ao gerar pergunta)
-        # Por ex, para raiz_soma_diferenca, b deve ser < a.
-        # Esta validação pode ser mais complexa e talvez melhor no momento da geração da pergunta
-        # ou com feedback mais dinâmico na UI. Por agora, salvamos os ranges como dados.
-
         quiz_config_entry = {
             'name': config_name,
             'formula_id': selected_formula_id,
             'ranges': ranges
-            # 'reminder_template' e 'question_template' virão da definição da fórmula ao gerar o quiz
         }
         custom_formulas_data.append(quiz_config_entry)
         feedback_text.value = f"Configuração de Quiz '{config_name}' salva!"
@@ -619,14 +728,13 @@ def build_tela_formula_quiz_setup(page: Page):
 
         update_saved_quiz_configs_dropdown()
         quiz_config_name_field.value = ""
-        formula_type_dropdown.value = None # Resetar dropdown de tipo
-        var_a_range_field.visible = False # Esconder ranges
+        formula_type_dropdown.value = None
+        var_a_range_field.visible = False
         var_b_range_field.visible = False
         page.update()
 
-    # Handler para INICIAR um quiz com uma CONFIGURAÇÃO SALVA
     def start_quiz_with_saved_config_handler(e):
-        global current_custom_formula_for_quiz # Esta var global será usada para passar a config do quiz
+        global current_custom_formula_for_quiz
 
         selected_config_name = saved_quiz_configs_dropdown.value
         if not selected_config_name:
@@ -635,20 +743,17 @@ def build_tela_formula_quiz_setup(page: Page):
             page.update()
             return
 
-        # Encontra a configuração salva
         quiz_config_to_run = next((cfg for cfg in custom_formulas_data if cfg['name'] == selected_config_name), None)
 
         if quiz_config_to_run:
-            # `current_custom_formula_for_quiz` agora armazena a *configuração do quiz* selecionada,
-            # que inclui o formula_id e os ranges.
             current_custom_formula_for_quiz = quiz_config_to_run
-            page.go("/custom_quiz") # A tela /custom_quiz precisará ser adaptada
+            page.go("/custom_quiz")
         else:
             feedback_text.value = f"Configuração de Quiz '{selected_config_name}' não encontrada."
             feedback_text.color = obter_cor_do_tema_ativo("feedback_erro_texto")
             page.update()
 
-    update_saved_quiz_configs_dropdown() # Atualizar dropdown de configs salvas na carga inicial
+    update_saved_quiz_configs_dropdown()
 
     save_button = ElevatedButton("Salvar Configuração do Quiz", on_click=save_quiz_config_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
     start_quiz_button = ElevatedButton("Iniciar Quiz com Config. Salva", on_click=start_quiz_with_saved_config_handler, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto"))
@@ -660,17 +765,17 @@ def build_tela_formula_quiz_setup(page: Page):
             Container(height=10),
             Text("1. Configure um novo Quiz:", size=18, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao")),
             quiz_config_name_field,
-            formula_type_dropdown, # Novo dropdown para tipo de fórmula
+            formula_type_dropdown,
             Container(height=5),
             Text("Defina os ranges para as variáveis (1-10):", color=obter_cor_do_tema_ativo("texto_padrao"), size=12),
             Row([var_a_range_field, var_b_range_field], spacing=10, alignment=MainAxisAlignment.CENTER),
             Container(height=10),
-            save_button, # Agora salva a configuração do quiz
+            save_button,
             Container(height=15, border=ft.border.only(bottom=ft.BorderSide(1, obter_cor_do_tema_ativo("texto_padrao"))), margin=ft.margin.symmetric(vertical=10)),
             Text("2. Ou inicie um Quiz com uma Configuração Salva:", size=18, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao")),
-            saved_quiz_configs_dropdown, # Lista configurações salvas
+            saved_quiz_configs_dropdown,
             Container(height=10),
-            start_quiz_button, # Inicia com config salva
+            start_quiz_button,
             Container(height=10),
             feedback_text,
             Container(height=15),
@@ -719,17 +824,14 @@ def build_tela_apresentacao(page: Page):
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
             ElevatedButton("Estatísticas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/estatisticas"), tooltip="Veja seu progresso.", bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")),
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
-            ElevatedButton("Quiz com Fórmulas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/formula_quiz_setup"), tooltip="Crie ou selecione um quiz baseado em fórmulas notáveis.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")), # Rota e texto atualizados
+            ElevatedButton("Quiz com Fórmulas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/formula_quiz_setup"), tooltip="Crie ou selecione um quiz baseado em fórmulas notáveis.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
             Container(height=20, margin=ft.margin.only(top=10)),
         ] + controles_botoes_tema + [
             Container(height=10),
             update_action_button, # Adiciona o botão de "Atualizar Agora" se visível
             Container(height=5),
-            # Removido o texto de status daqui, pois está na AppBar
-            # Row([update_status_icon, Container(width=5), update_status_text], alignment=MainAxisAlignment.CENTER, vertical_alignment=CrossAxisAlignment.CENTER)
         ],
         alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL,
-        # Adicionar scroll caso o conteúdo fique muito grande com os botões de tema
         scroll=ScrollMode.AUTO
     )
 
@@ -742,7 +844,7 @@ def build_tela_apresentacao(page: Page):
 
     if tema_ativo_nome == "escuro_moderno":
         view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
-        view_container.bgcolor = None # Gradiente tem precedência
+        view_container.bgcolor = None
     else:
         view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
         view_container.gradient = None
@@ -974,7 +1076,7 @@ def build_tela_estatisticas(page: Page):
                 tooltip="Retornar à tela inicial.",
                 bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"),
                 color=obter_cor_do_tema_ativo("botao_principal_texto")
-            ), # <--- VÍRGULA ESTAVA FALTANDO AQUI, E FOI ADICIONADA NO PATCH ANTERIOR (subtarefa 18)
+            ),
         ],
         scroll=ScrollMode.AUTO,
         alignment=MainAxisAlignment.CENTER,
@@ -1006,8 +1108,6 @@ def build_tela_custom_quiz(page: Page):
     botoes_opcoes = [ElevatedButton(width=BOTAO_LARGURA_OPCAO_QUIZ, height=BOTAO_ALTURA_OPCAO_QUIZ, opacity=0, animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO) for _ in range(4)]
     texto_feedback = Text(size=18, weight=FontWeight.BOLD, text_align=TextAlign.CENTER, opacity=0, scale=0.8, animate_opacity=ANIMACAO_FEEDBACK_OPACIDADE, animate_scale=ANIMACAO_FEEDBACK_ESCALA)
 
-    # Renomeada de generate_custom_question_data
-    # A variável safe_globals_for_eval não é mais necessária aqui, pois não usamos eval() com strings de usuário.
     def generate_notable_formula_question_data(quiz_config):
         formula_id = quiz_config.get('formula_id')
         user_ranges = quiz_config.get('ranges', {})
@@ -1028,152 +1128,98 @@ def build_tela_custom_quiz(page: Page):
             return None
 
         local_vars_values = {}
-        # Sortear valores para as variáveis base
-        # Exemplo para 'a' e 'b', adaptável se houver mais ou menos variáveis no futuro
-
         val_a, val_b = None, None
 
         if 'a' in variables_defs:
-            range_a_config = user_ranges.get('a', {'min': 1, 'max': 10}) # Pega range do usuário ou default
+            range_a_config = user_ranges.get('a', {'min': 1, 'max': 10})
             min_a_constr = range_constraints.get('a', {}).get('min', 1)
-
             actual_min_a = max(range_a_config['min'], min_a_constr)
             actual_max_a = range_a_config['max']
-            if actual_min_a > actual_max_a : actual_min_a = actual_max_a # Evitar erro no randint
-
+            if actual_min_a > actual_max_a : actual_min_a = actual_max_a
             val_a = random.randint(actual_min_a, actual_max_a)
             local_vars_values['a'] = val_a
 
         if 'b' in variables_defs:
             range_b_config = user_ranges.get('b', {'min': 1, 'max': 10})
             min_b_constr = range_constraints.get('b', {}).get('min', 1)
-
             actual_min_b = max(range_b_config['min'], min_b_constr)
             actual_max_b = range_b_config['max']
 
-            # Aplicar restrições relacionais
             if range_constraints.get('b', {}).get('less_than_a') and val_a is not None:
                 actual_max_b = min(actual_max_b, val_a - 1)
             elif range_constraints.get('b', {}).get('less_than_equal_a') and val_a is not None:
                 actual_max_b = min(actual_max_b, val_a)
 
-            if actual_min_b > actual_max_b: # Se restrições tornarem impossível
-                # Tentar um fallback simples: se b precisa ser < a, e a é 1, não é possível.
-                # Esta lógica de fallback pode precisar de mais refinamento para casos complexos.
-                # Por agora, se o range ficar inválido, pode dar erro no randint ou gerar valor não ideal.
-                # Uma solução seria tentar sortear 'a' novamente ou sinalizar erro.
-                # Para as fórmulas atuais, os ranges 1-10 e as restrições devem ser gerenciáveis.
-                # Se min_b se tornou > max_b, forçar min_b = max_b (ou o contrário, dependendo da causa)
-                # Ex: se a=1 e b<a, max_b fica 0. min_b é 1. randint(1,0) falha.
-                # Ajuste:
-                if actual_min_b > actual_max_b:
-                     if range_constraints.get('b', {}).get('less_than_a') and val_a == 1: # Caso específico: a=1, b<a
-                         print(f"Aviso: Não é possível sortear b < a quando a=1 para fórmula {formula_id}. Tentando a=2.")
-                         val_a = 2 # Tenta forçar 'a' para um valor que permita 'b'
-                         local_vars_values['a'] = val_a
-                         actual_max_b = min(range_b_config['max'], val_a -1) # Recalcula max_b
-                         if actual_min_b > actual_max_b: # Ainda problemático
-                             print(f"Erro Crítico: Range inválido para 'b' mesmo após ajuste de 'a' para fórmula {formula_id}")
-                             return None
-                     else: # Outro caso de min > max
-                         actual_min_b = actual_max_b # Ou alguma outra lógica de ajuste
+            if actual_min_b > actual_max_b:
+                if range_constraints.get('b', {}).get('less_than_a') and val_a == 1:
+                    print(f"Aviso: Não é possível sortear b < a quando a=1 para fórmula {formula_id}. Tentando a=2.")
+                    val_a = 2
+                    local_vars_values['a'] = val_a
+                    actual_max_b = min(range_b_config['max'], val_a -1)
+                    if actual_min_b > actual_max_b:
+                        print(f"Erro Crítico: Range inválido para 'b' mesmo após ajuste de 'a' para fórmula {formula_id}")
+                        return None
+                else:
+                    actual_min_b = actual_max_b
 
             val_b = random.randint(actual_min_b, actual_max_b)
             local_vars_values['b'] = val_b
 
         try:
-            # As funções de cálculo esperam argumentos nomeados
             correct_answer = calculation_func(**local_vars_values)
         except Exception as e:
             print(f"Erro ao calcular fórmula '{formula_id}' com valores {local_vars_values}. Erro: {e}")
             return None
 
-        # Formatar a pergunta
         full_question_text = question_template.format(**local_vars_values)
 
-        # Gerar opções incorretas (lógica similar à anterior)
         options_set = {correct_answer}
         attempts = 0
-        # Garantir que as opções sejam inteiras se a resposta for inteira
         is_correct_answer_int = isinstance(correct_answer, int)
 
-        while len(options_set) < 4 and attempts < 50: # Aumentado tentativas para mais robustez
-            offset_val = random.choice([-3, -2, -1, 1, 2, 3, 5, -5]) # Offsets inteiros
-            if abs(correct_answer) > 20: # Maior variação para números maiores
-                 # Tenta gerar offsets proporcionais, mas garante que sejam inteiros
+        while len(options_set) < 4 and attempts < 50:
+            offset_val = random.choice([-3, -2, -1, 1, 2, 3, 5, -5])
+            if abs(correct_answer) > 20:
                 prop_offset_candidate = round(correct_answer * random.choice([0.1, -0.1, 0.2, -0.2]))
                 if prop_offset_candidate == 0: prop_offset_candidate = random.choice([-1,1])
-                offset_val = random.choice([offset_val, int(prop_offset_candidate)]) # Usa o offset proporcional ou um fixo
-
+                offset_val = random.choice([offset_val, int(prop_offset_candidate)])
             new_opt = correct_answer + offset_val
-            if is_correct_answer_int: # Se a resposta é int, as opções devem ser int
-                new_opt = int(round(new_opt))
-
-            if new_opt not in options_set:
-                options_set.add(new_opt)
+            if is_correct_answer_int: new_opt = int(round(new_opt))
+            if new_opt not in options_set: options_set.add(new_opt)
             attempts += 1
 
         idx = 1
-        while len(options_set) < 4: # Fallback mais simples
+        while len(options_set) < 4:
             alt_opt = correct_answer + (idx * random.choice([-1,1]))
             if is_correct_answer_int: alt_opt = int(round(alt_opt))
-
             if alt_opt not in options_set : options_set.add(alt_opt)
             idx +=1
             if idx > 20 : break
 
         final_options = list(options_set)
-        # Se por algum motivo ainda não tem 4, preenche com sequenciais simples
         idx = 1
         base_fill_val = correct_answer if isinstance(correct_answer, (int, float)) else 1
         while len(final_options) < 4:
-            fill_opt = base_fill_val + idx * 10 + random.randint(0,5) # Gera números mais distintos
+            fill_opt = base_fill_val + idx * 10 + random.randint(0,5)
             if is_correct_answer_int: fill_opt = int(round(fill_opt))
             if fill_opt not in final_options: final_options.append(fill_opt)
-            else: final_options.append(base_fill_val - idx * 10 - random.randint(0,5)) # Tenta outro lado
+            else: final_options.append(base_fill_val - idx * 10 - random.randint(0,5))
             idx +=1
-            if idx > 10: break # Evita loop infinito no fallback do fallback
+            if idx > 10: break
 
         random.shuffle(final_options)
 
         return {
             'full_question': full_question_text,
-            'options': final_options[:4], # Garante que só tem 4 opções
+            'options': final_options[:4],
             'correct_answer': correct_answer,
             'reminder_template': reminder_template
-            # 'formula_details' não é mais a string da fórmula, mas a config do quiz já está em current_custom_formula_for_quiz
         }
-
-    def handle_custom_answer(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, btn_proxima_ctrl_ref, question_data_ref):
-        selected_option = botao_clicado_ref.data['option']
-        correct_answer = question_data_ref['correct_answer']
-
-        is_correct = (selected_option == correct_answer) # Cuidado com float precision, mas aqui deve ser ok
-
-        if is_correct:
-            txt_feedback_ctrl_ref.value = "Correto!"
-            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
-            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_acerto_botao_bg")
-        else:
-            txt_feedback_ctrl_ref.value = f"Errado! A resposta era {correct_answer}"
-            txt_feedback_ctrl_ref.color = obter_cor_do_tema_ativo("feedback_erro_texto")
-            botao_clicado_ref.bgcolor = obter_cor_do_tema_ativo("feedback_erro_botao_bg")
-            # Destacar a opção correta
-            for btn_op in todos_botoes_opcoes_ref:
-                if btn_op.data['option'] == correct_answer:
-                    btn_op.bgcolor = obter_cor_do_tema_ativo("feedback_acerto_botao_bg")
-                    break
-
-        for btn in todos_botoes_opcoes_ref: btn.disabled = True
-        txt_feedback_ctrl_ref.opacity = 1; txt_feedback_ctrl_ref.scale = 1
-        btn_proxima_ctrl_ref.visible = True; page.update()
 
     botao_proxima = ElevatedButton("Próxima Pergunta", on_click=None, visible=False, width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
 
-    # Store current question data to be accessible by handlers
-    current_question_data_ref = {} # Armazena dados da pergunta atual, incluindo o gabarito do lembrete
+    current_question_data_ref = {}
 
-    # Novo controle para exibir o lembrete da fórmula
     texto_lembrete_formula = Text(
         "",
         size=16,
@@ -1183,58 +1229,10 @@ def build_tela_custom_quiz(page: Page):
         animate_opacity=ANIMACAO_APARICAO_TEXTO_BOTAO
     )
 
-    def carregar_nova_pergunta_custom(page_ref, formula_config_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage):
-        txt_feedback_ctrl.opacity = 0; txt_feedback_ctrl.scale = 0.8
-        txt_lembrete_ctrl.opacity = 0 # Esconde lembrete ao carregar nova pergunta
-        txt_pergunta_ctrl.opacity = 0
-        for btn_opcao in btn_opcoes_ctrls: btn_opcao.opacity = 0
-
-        # A função foi renomeada e sua lógica interna alterada na Etapa 5
-        question_data = generate_notable_formula_question_data(formula_config_ref)
-
-        if not question_data:
-            txt_pergunta_ctrl.value = "Erro ao gerar pergunta para esta configuração."; txt_pergunta_ctrl.opacity = 1
-            for btn in btn_opcoes_ctrls: btn.visible = False
-            txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
-            btn_proxima_ctrl.text = "Voltar para Configuração"
-            # A rota /custom_formula_setup foi renomeada para /formula_quiz_setup
-            btn_proxima_ctrl.on_click = lambda _: page.go("/formula_quiz_setup")
-            btn_proxima_ctrl.visible = True
-            page_ref.update(); return
-
-        question_data_storage.clear()
-        question_data_storage.update(question_data) # Salva dados da pergunta, incluindo reminder_template
-
-        txt_pergunta_ctrl.value = question_data['full_question']
-
-        for i in range(4):
-            if i < len(question_data['options']):
-                op_val = question_data['options'][i]
-                btn_opcoes_ctrls[i].text = str(op_val)
-                btn_opcoes_ctrls[i].data = {'option': op_val}
-                # Passar txt_lembrete_ctrl para handle_custom_answer
-                btn_opcoes_ctrls[i].on_click = lambda e, btn=btn_opcoes_ctrls[i]: handle_custom_answer(page_ref, btn, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage)
-                btn_opcoes_ctrls[i].bgcolor = obter_cor_do_tema_ativo("botao_opcao_quiz_bg")
-                btn_opcoes_ctrls[i].color = obter_cor_do_tema_ativo("botao_opcao_quiz_texto")
-                btn_opcoes_ctrls[i].disabled = False; btn_opcoes_ctrls[i].visible = True
-            else:
-                btn_opcoes_ctrls[i].visible = False
-
-        txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
-        btn_proxima_ctrl.text = "Próxima Pergunta"
-        # Passar txt_lembrete_ctrl para o on_click do botão Próxima Pergunta
-        btn_proxima_ctrl.on_click = lambda _: carregar_nova_pergunta_custom(page_ref, formula_config_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage)
-
-        txt_pergunta_ctrl.opacity = 1
-        for btn_opcao in btn_opcoes_ctrls:
-            if btn_opcao.visible: btn_opcao.opacity = 1
-        page_ref.update()
-
-    # Modificar handle_custom_answer para aceitar e usar txt_lembrete_ctrl
     def handle_custom_answer(e, botao_clicado_ref, todos_botoes_opcoes_ref, txt_feedback_ctrl_ref, txt_lembrete_ctrl_ref, btn_proxima_ctrl_ref, question_data_ref):
         selected_option = botao_clicado_ref.data['option']
         correct_answer = question_data_ref['correct_answer']
-        reminder_text = question_data_ref.get('reminder_template', "") # Obter o lembrete
+        reminder_text = question_data_ref.get('reminder_template', "")
 
         is_correct = (selected_option == correct_answer)
 
@@ -1254,38 +1252,73 @@ def build_tela_custom_quiz(page: Page):
         for btn in todos_botoes_opcoes_ref: btn.disabled = True
         txt_feedback_ctrl_ref.opacity = 1; txt_feedback_ctrl_ref.scale = 1
 
-        # Exibir o lembrete da fórmula
         if reminder_text:
             txt_lembrete_ctrl_ref.value = f"Lembrete: {reminder_text}"
             txt_lembrete_ctrl_ref.opacity = 1
 
         btn_proxima_ctrl_ref.visible = True; page.update()
 
+    def carregar_nova_pergunta_custom(page_ref, formula_config_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage):
+        txt_feedback_ctrl.opacity = 0; txt_feedback_ctrl.scale = 0.8
+        txt_lembrete_ctrl.opacity = 0
+        txt_pergunta_ctrl.opacity = 0
+        for btn_opcao in btn_opcoes_ctrls: btn_opcao.opacity = 0
 
-    # Configurar o clique do botão "Próxima Pergunta"
-    # formula_obj é current_custom_formula_for_quiz, que agora é a quiz_config
+        question_data = generate_notable_formula_question_data(formula_config_ref)
+
+        if not question_data:
+            txt_pergunta_ctrl.value = "Erro ao gerar pergunta para esta configuração."; txt_pergunta_ctrl.opacity = 1
+            for btn in btn_opcoes_ctrls: btn.visible = False
+            txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
+            btn_proxima_ctrl.text = "Voltar para Configuração"
+            btn_proxima_ctrl.on_click = lambda _: page.go("/formula_quiz_setup")
+            btn_proxima_ctrl.visible = True
+            page_ref.update(); return
+
+        question_data_storage.clear()
+        question_data_storage.update(question_data)
+
+        txt_pergunta_ctrl.value = question_data['full_question']
+
+        for i in range(4):
+            if i < len(question_data['options']):
+                op_val = question_data['options'][i]
+                btn_opcoes_ctrls[i].text = str(op_val)
+                btn_opcoes_ctrls[i].data = {'option': op_val}
+                btn_opcoes_ctrls[i].on_click = lambda e, btn=btn_opcoes_ctrls[i]: handle_custom_answer(e, btn, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage)
+                btn_opcoes_ctrls[i].bgcolor = obter_cor_do_tema_ativo("botao_opcao_quiz_bg")
+                btn_opcoes_ctrls[i].color = obter_cor_do_tema_ativo("botao_opcao_quiz_texto")
+                btn_opcoes_ctrls[i].disabled = False; btn_opcoes_ctrls[i].visible = True
+            else:
+                btn_opcoes_ctrls[i].visible = False
+
+        txt_feedback_ctrl.value = ""; btn_proxima_ctrl.visible = False
+        btn_proxima_ctrl.text = "Próxima Pergunta"
+        btn_proxima_ctrl.on_click = lambda _: carregar_nova_pergunta_custom(page_ref, formula_config_ref, txt_pergunta_ctrl, btn_opcoes_ctrls, txt_feedback_ctrl, txt_lembrete_ctrl, btn_proxima_ctrl, question_data_storage)
+
+        txt_pergunta_ctrl.opacity = 1
+        for btn_opcao in btn_opcoes_ctrls:
+            if btn_opcao.visible: btn_opcao.opacity = 1
+        page_ref.update()
+
     botao_proxima.on_click = lambda _: carregar_nova_pergunta_custom(page, formula_obj, texto_pergunta, botoes_opcoes, texto_feedback, texto_lembrete_formula, botao_proxima, current_question_data_ref)
-
-    # Carregar a primeira pergunta
     carregar_nova_pergunta_custom(page, formula_obj, texto_pergunta, botoes_opcoes, texto_feedback, texto_lembrete_formula, botao_proxima, current_question_data_ref)
 
-    # O botão voltar deve ir para a nova tela de setup /formula_quiz_setup
     botao_voltar_setup = ElevatedButton("Mudar Config. / Menu", on_click=lambda _: page.go("/formula_quiz_setup"), width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto"))
 
     layout_botoes = Column([Row(botoes_opcoes[0:2], alignment=MainAxisAlignment.CENTER, spacing=15), Container(height=10), Row(botoes_opcoes[2:4], alignment=MainAxisAlignment.CENTER, spacing=15)], horizontal_alignment=CrossAxisAlignment.CENTER, spacing=10)
 
-    # Adicionar texto_lembrete_formula ao layout
     conteudo_quiz = Column(
         [
-            Text(f"Quiz Fórmula: {formula_obj['name']}", size=20, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), text_align=TextAlign.CENTER), # Nome da config salva
+            Text(f"Quiz Fórmula: {formula_obj['name']}", size=20, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"), text_align=TextAlign.CENTER),
             Container(height=5),
             texto_pergunta,
             Container(height=15),
             layout_botoes,
             Container(height=15),
             texto_feedback,
-            Container(height=10), # Espaço antes do lembrete
-            texto_lembrete_formula, # Novo controle adicionado
+            Container(height=10),
+            texto_lembrete_formula,
             Container(height=20),
             botao_proxima,
             Container(height=10),
@@ -1323,216 +1356,116 @@ def main(page: Page):
     page.window_height = 800
     page.fonts = {"RobotoSlab": "https://github.com/google/fonts/raw/main/apache/robotoslab/RobotoSlab%5Bwght%5D.ttf"}
 
-    # --- Elementos Globais da UI para Atualização ---
-    update_status_icon = ft.Icon(name=Icons.SYNC_PROBLEM, color=obter_cor_do_tema_ativo("update_icon_color_error"), tooltip=update_check_status_message, size=20)
-    update_status_text = ft.Text(f"v{APP_CURRENT_VERSION} ({local_git_commit})", size=10, color=obter_cor_do_tema_ativo("texto_padrao"), opacity=0.7)
-    update_action_button = ft.ElevatedButton(
-        text="Atualizar Agora",
-        icon=Icons.UPDATE,
-        visible=False,
-        on_click=lambda _: show_update_dialog(page), # Definiremos show_update_dialog depois
-        bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"),
-        color=obter_cor_do_tema_ativo("botao_destaque_texto")
+    # Inicializar o global update_dialog que foi definido como None anteriormente
+    global update_dialog
+    update_dialog = ft.AlertDialog(
+        modal=True,
+        title=Text("Confirmar Atualização"), # Título padrão
+        content=update_dialog_content_text, # Conteúdo global
+        # As ações são (re)definidas em show_update_dialog
     )
 
     def update_ui_elements_for_update_status():
         """Atualiza os elementos da UI com base no status da verificação de atualização."""
         global update_available, latest_version_tag, update_check_status_message, APP_CURRENT_VERSION, local_git_commit
+        global update_status_icon, update_status_text, update_action_button # Certificar que estamos usando os globais
 
-        update_status_text.value = f"v{APP_CURRENT_VERSION} ({local_git_commit.splitlines()[0] if local_git_commit else 'N/A'}) - {update_check_status_message}"
-        update_status_text.color = obter_cor_do_tema_ativo("texto_padrao") # Resetar cor
-        update_action_button.visible = False # Esconder por padrão
+        # Atualiza cores baseadas no tema ATIVO
+        update_status_icon.tooltip = update_check_status_message # Tooltip primeiro
+        update_status_text.color = obter_cor_do_tema_ativo("texto_padrao")
+        update_action_button.bgcolor = obter_cor_do_tema_ativo("botao_destaque_bg")
+        update_action_button.color = obter_cor_do_tema_ativo("botao_destaque_texto")
 
-        if "Erro ao verificar" in update_check_status_message or "Erro inesperado" in update_check_status_message:
-            update_status_icon.name = Icons.ERROR_OUTLINE
+        current_commit_hash = local_git_commit.splitlines()[0] if local_git_commit else 'N/A'
+        base_text = f"v{APP_CURRENT_VERSION} ({current_commit_hash})"
+
+        if "Erro" in update_check_status_message or "Não foi possível conectar" in update_check_status_message:
+            update_status_icon.name = ft.icons.ERROR_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_error")
-            update_status_icon.tooltip = update_check_status_message
+            update_status_text.value = f"{base_text} - {update_check_status_message}"
+            update_action_button.visible = False
         elif update_available:
-            update_status_icon.name = Icons.NEW_RELEASES
+            update_status_icon.name = ft.icons.NEW_RELEASES
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_available")
             update_status_icon.tooltip = f"Nova versão {latest_version_tag} disponível!"
             update_status_text.value = f"Atualização: v{APP_CURRENT_VERSION} -> {latest_version_tag}"
             update_action_button.visible = True
-            update_action_button.bgcolor = obter_cor_do_tema_ativo("botao_destaque_bg")
-            update_action_button.color = obter_cor_do_tema_ativo("botao_destaque_texto")
-
         else: # Nenhuma atualização ou já atualizado
-            update_status_icon.name = Icons.CHECK_CIRCLE_OUTLINE
+            update_status_icon.name = ft.icons.CHECK_CIRCLE_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_uptodate")
             update_status_icon.tooltip = "Você está na versão mais recente."
+            update_status_text.value = f"{base_text} - {update_check_status_message}"
+            update_action_button.visible = False
 
-        # Atualiza o botão de atualização se estiver na tela de apresentação
-        # (ou em qualquer outra tela que o contenha - precisa ser adicionado lá também)
-        # Esta é uma forma simples, idealmente o botão seria parte de um layout persistente ou AppBar
-        if page.route == "/":
-             # A lógica de reconstrução da tela de apresentação precisará adicionar este botão
-             # ou teremos que encontrar o botão no `page.views` e atualizá-lo.
-             # Por agora, vamos assumir que o botão é atualizado ao reconstruir a view.
-             pass
+        if page.appbar and hasattr(page.appbar, 'actions'):
+            pass
 
-
-        if page.controls: # Se houver AppBar, atualiza lá
-            app_bar = page.appbar
-            if app_bar and hasattr(app_bar, 'actions'):
-                # Encontrar e atualizar os elementos na AppBar
-                for action_item in app_bar.actions:
-                    if isinstance(action_item, ft.Row) and len(action_item.controls) > 1:
-                        icon_ctrl = action_item.controls[0]
-                        text_ctrl = action_item.controls[1]
-                        if isinstance(icon_ctrl, ft.Icon) and isinstance(text_ctrl, ft.Text):
-                            icon_ctrl.name = update_status_icon.name
-                            icon_ctrl.color = update_status_icon.color
-                            icon_ctrl.tooltip = update_status_icon.tooltip
-                            text_ctrl.value = update_status_text.value
-                            text_ctrl.color = update_status_text.color
-                            break
         page.update()
 
     def run_update_check_and_ui_refresh(page_ref: Page):
         """Executa a verificação de atualização e atualiza a UI."""
         check_for_updates()
         update_ui_elements_for_update_status()
-        page_ref.update()
 
-
-    # --- Diálogo de Confirmação e Lógica de Atualização ---
-    update_progress_indicator = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
-    update_dialog_content_text = Text("Uma nova versão do aplicativo está disponível. Deseja atualizar agora? O aplicativo precisará ser reiniciado.")
-
-    def perform_update_action(e, page_ref: Page, dialog_ref: ft.AlertDialog):
-        global update_check_status_message
-
-        dialog_ref.content = Column([
-            update_dialog_content_text,
-            Container(height=10),
-            Row([update_progress_indicator, Text("Atualizando...")], alignment=MainAxisAlignment.CENTER)
-        ])
-        update_progress_indicator.visible = True
-        dialog_ref.actions = [] # Remover botões durante o processo
-        page_ref.update()
-
-        try:
-            # 1. Verificar se é um repositório git
-            if not os.path.exists(".git"):
-                update_dialog_content_text.value = "Erro: Não é um repositório git. A atualização automática não pode prosseguir."
-                update_progress_indicator.visible = False
-                dialog_ref.actions = [ft.TextButton("OK", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
-                page_ref.update()
-                return
-
-            # 2. Salvar quaisquer alterações locais não commitadas (stash)
-            subprocess.run(['git', 'stash', 'push', '-u', '-m', 'autostash_before_update'], check=True, capture_output=True)
-            print("Git stash push executado.")
-
-            # 3. Puxar as últimas alterações do repositório (branch padrão)
-            pull_result = subprocess.run(['git', 'pull', '--ff-only'], check=True, capture_output=True, text=True) # --ff-only para evitar merges
-            print(f"Git pull executado: {pull_result.stdout}")
-
-            # 4. Tentar aplicar o stash de volta (opcional, mas bom para manter alterações locais)
-            #    Se houver conflitos, o usuário precisará resolver manualmente após reiniciar.
-            subprocess.run(['git', 'stash', 'pop'], capture_output=True) # Não checa 'check=True' aqui, pois pode falhar com conflitos
-            print("Git stash pop tentado.")
-
-            update_dialog_content_text.value = "Atualização concluída com sucesso! Por favor, reinicie o aplicativo para aplicar as alterações."
-            update_check_status_message = "Atualizado! Reinicie." # Atualiza a mensagem global também
-
-        except subprocess.CalledProcessError as err:
-            error_message = f"Erro durante a atualização: {err.stderr or err.stdout or str(err)}"
-            print(error_message)
-            update_dialog_content_text.value = error_message
-            # Tentar reverter o stash se o pull falhou
-            subprocess.run(['git', 'stash', 'pop'], capture_output=True)
-
-        except FileNotFoundError:
-            update_dialog_content_text.value = "Erro: Git não encontrado. A atualização não pode prosseguir."
-        except Exception as ex:
-            update_dialog_content_text.value = f"Erro inesperado: {str(ex)}"
-
-        update_progress_indicator.visible = False
-        dialog_ref.actions = [ft.TextButton("OK, Reiniciar Manualmente", on_click=lambda ev: close_dialog(ev, page_ref, dialog_ref))]
-        page_ref.update()
-
-
-    update_dialog = ft.AlertDialog(
-        modal=True,
-        title=Text("Confirmar Atualização"),
-        content=update_dialog_content_text, # Usar o controle de texto
-        actions=[
-            ft.TextButton("Sim, Atualizar", on_click=lambda e: perform_update_action(e, page, update_dialog)),
-            ft.TextButton("Agora Não", on_click=lambda e: close_dialog(e, page, update_dialog)),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
-
-    def close_dialog(e, page_ref: Page, dialog_ref: ft.AlertDialog):
-        dialog_ref.open = False
-        page_ref.update()
-
-    def show_update_dialog(page_ref: Page):
-        page_ref.dialog = update_dialog
-        update_dialog.open = True
-        page_ref.update()
-
-    # --- Fim dos Elementos de Atualização ---
-
+    # Atribuir o on_click para update_action_button aqui, onde 'page' é definido.
+    update_action_button.on_click = lambda _: show_update_dialog(page)
 
     def route_change(route_obj):
         page.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
         page.views.clear()
 
+        # AppBar unificada para todas as telas
+        app_bar = ft.AppBar(
+            title=Text("Quiz Mestre da Tabuada", color=obter_cor_do_tema_ativo("texto_titulos")),
+            center_title=True,
+            bgcolor=obter_cor_do_tema_ativo("fundo_pagina"),
+            actions=[
+                Row([
+                    update_status_icon,
+                    Container(width=5),
+                    update_status_text,
+                    Container(width=10)
+                ], alignment=MainAxisAlignment.CENTER, vertical_alignment=CrossAxisAlignment.CENTER),
+            ]
+        )
+
         page.views.append(
             View(
                 route="/",
-                controls=[build_tela_apresentacao(page)], # build_tela_apresentacao precisará ser modificado
+                controls=[build_tela_apresentacao(page)],
                 vertical_alignment=MainAxisAlignment.CENTER,
                 horizontal_alignment=CrossAxisAlignment.CENTER,
-                # Adicionando AppBar simples para mostrar status da atualização
-                appbar=ft.AppBar(
-                    title=Text("Quiz Mestre da Tabuada", color=obter_cor_do_tema_ativo("texto_titulos")),
-                    center_title=True,
-                    bgcolor=obter_cor_do_tema_ativo("fundo_pagina"),
-                    actions=[
-                        Row([
-                            update_status_icon,
-                            Container(width=5),
-                            update_status_text,
-                            Container(width=10)
-                        ], alignment=MainAxisAlignment.CENTER, vertical_alignment=CrossAxisAlignment.CENTER),
-                        # update_action_button # Poderia ser adicionado aqui também, se desejado
-                    ]
-                )
+                appbar=app_bar
             )
         )
         if page.route == "/quiz":
-            page.views.append(View("/quiz", [build_tela_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar)) # Reutiliza AppBar
+            page.views.append(View("/quiz", [build_tela_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
         elif page.route == "/quiz_invertido":
-            page.views.append(View("/quiz_invertido", [build_tela_quiz_invertido(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
+            page.views.append(View("/quiz_invertido", [build_tela_quiz_invertido(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
         elif page.route == "/treino":
-            page.views.append(View("/treino", [build_tela_treino(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
+            page.views.append(View("/treino", [build_tela_treino(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
         elif page.route == "/estatisticas":
-            page.views.append(View("/estatisticas", [build_tela_estatisticas(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
+            page.views.append(View("/estatisticas", [build_tela_estatisticas(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
         elif page.route == "/formula_quiz_setup":
-            page.views.append(View("/formula_quiz_setup", [build_tela_formula_quiz_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
+            page.views.append(View("/formula_quiz_setup", [build_tela_formula_quiz_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
         elif page.route == "/custom_quiz":
-            page.views.append(View("/custom_quiz", [build_tela_custom_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=page.views[0].appbar))
+            page.views.append(View("/custom_quiz", [build_tela_custom_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
 
-        # Garantir que a UI de atualização seja atualizada na mudança de rota
-        # Isso é importante porque a AppBar é reconstruída.
         update_ui_elements_for_update_status()
         page.update()
 
     def view_pop(view_instance):
-        if page.views:
-            top_view = page.views[-1]
-            page.go(top_view.route)
+        page.views.pop()
+        top_view = page.views[-1]
+        page.go(top_view.route)
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
-    # Iniciar a verificação de atualização em uma thread separada para não bloquear a UI
     update_thread = threading.Thread(target=run_update_check_and_ui_refresh, args=(page,), daemon=True)
     update_thread.start()
 
     page.go("/")
 
-ft.app(target=main)
+if __name__ == "__main__":
+    ft.app(target=main)
