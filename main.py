@@ -81,6 +81,26 @@ FORMULAS_NOTAVEIS = [
             'b': "Valor de 'b' (dentro da sqrt, b < a)"
         }
     },
+    {
+        'id': "divisao_diretamente_proporcional",
+        'display_name': "Divisão Diretamente Proporcional",
+        'variables': ['V', 'g_A', 'g_B'], # Exemplo com 2 grandezas, generalizar na UI
+        'calculation_function': lambda V, g_A, g_B: calc_divisao_diretamente_proporcional(V, [("A", g_A), ("B", g_B)]), # Adaptar para quiz
+        'question_template': "Divida V={V} diretamente proporcional a g_A={g_A} e g_B={g_B}. Qual a parte de A?",
+        'reminder_template': "P_i = g_i * K, onde K = V / (g_1 + g_2 + ... + g_n)",
+        'range_constraints': {'V': {'min': 10, 'max':1000}, 'g_A': {'min':1, 'max':20}, 'g_B': {'min':1, 'max':20}}, # Ranges para o quiz
+        'variable_labels': {'V': "Valor Total (V)", 'g_A': "Grandeza A", 'g_B': "Grandeza B"}
+    },
+    {
+        'id': "divisao_inversamente_proporcional",
+        'display_name': "Divisão Inversamente Proporcional",
+        'variables': ['V', 'g_A', 'g_B'], # Exemplo com 2 grandezas
+        'calculation_function': lambda V, g_A, g_B: calc_divisao_inversamente_proporcional(V, [("A", g_A), ("B", g_B)]), # Adaptar para quiz
+        'question_template': "Divida V={V} inversamente proporcional a g_A={g_A} e g_B={g_B}. Qual a parte de A?",
+        'reminder_template': "P_i = K / g_i, onde K = V / (1/g_1 + 1/g_2 + ... + 1/g_n)",
+        'range_constraints': {'V': {'min': 10, 'max':1000}, 'g_A': {'min':1, 'max':20}, 'g_B': {'min':1, 'max':20, 'not_equal_to_g_A': True}}, # g_A != g_B para evitar partes iguais trivialmente
+        'variable_labels': {'V': "Valor Total (V)", 'g_A': "Grandeza A (≠0)", 'g_B': "Grandeza B (≠0, ≠g_A)"}
+    },
 ]
 
 def get_formula_definition(formula_id: str):
@@ -88,6 +108,56 @@ def get_formula_definition(formula_id: str):
         if formula['id'] == formula_id:
             return formula
     return None
+
+# --- Funções de Cálculo para Novas Fórmulas ---
+def calc_divisao_diretamente_proporcional(valor_total: float, grandezas: list[tuple[str, float]]) -> dict[str, float]:
+    """
+    Calcula a divisão de um valor total de forma diretamente proporcional às grandezas fornecidas.
+    Args:
+        valor_total: O valor total a ser dividido.
+        grandezas: Uma lista de tuplas, onde cada tupla contém o nome (str)
+                   e o valor da grandeza (float). Ex: [("Manu", 4), ("Murilo", 2)]
+    Returns:
+        Um dicionário com o nome como chave e a parte correspondente como valor.
+        Retorna um dicionário vazio se a soma das grandezas for zero para evitar divisão por zero.
+    """
+    soma_grandezas = sum(g[1] for g in grandezas)
+    if soma_grandezas == 0:
+        return {item[0]: 0.0 for item in grandezas} # Evita divisão por zero e retorna 0 para todos
+
+    k = valor_total / soma_grandezas
+    resultado = {}
+    for nome, grandeza_valor in grandezas:
+        resultado[nome] = grandeza_valor * k
+    return resultado
+
+def calc_divisao_inversamente_proporcional(valor_total: float, grandezas: list[tuple[str, float]]) -> dict[str, float]:
+    """
+    Calcula a divisão de um valor total de forma inversamente proporcional às grandezas fornecidas.
+    Args:
+        valor_total: O valor total a ser dividido.
+        grandezas: Uma lista de tuplas, onde cada tupla contém o nome (str)
+                   e o valor da grandeza (float). Ex: [("Manu", 4), ("Murilo", 3)]
+                   Os valores das grandezas devem ser diferentes de zero.
+    Returns:
+        Um dicionário com o nome como chave e a parte correspondente como valor.
+        Retorna um dicionário vazio se alguma grandeza for zero ou se a soma dos inversos for zero.
+    """
+    soma_inversos_grandezas = 0
+    for nome, grandeza_valor in grandezas:
+        if grandeza_valor == 0:
+            # Divisão por zero não é permitida para uma grandeza individual
+            return {item[0]: 0.0 for item in grandezas} # Ou poderia lançar um erro
+        soma_inversos_grandezas += 1 / grandeza_valor
+
+    if soma_inversos_grandezas == 0:
+        return {item[0]: 0.0 for item in grandezas} # Evita divisão por zero
+
+    k = valor_total / soma_inversos_grandezas
+    resultado = {}
+    for nome, grandeza_valor in grandezas:
+        resultado[nome] = k / grandeza_valor
+    return resultado
 
 # --- Fim das Definições das Fórmulas Notáveis ---
 
@@ -273,7 +343,7 @@ custom_formulas_data = [] # Lista para armazenar as fórmulas personalizadas
 current_custom_formula_for_quiz = None # Armazena a fórmula selecionada para o quiz personalizado
 
 # --- Constantes e Lógica de Atualização ---
-GITHUB_REPO_URL = "https://api.github.com/repos/desenvolvedorXXX/quiz_app_flet/releases/latest" # !!! IMPORTANTE: Substitua pelo seu URL do repositório GitHub !!!
+GITHUB_REPO_URL = "https://api.github.com/repos/juanzitos252/Matem-tica/releases/latest" # !!! IMPORTANTE: Substitua pelo seu URL do repositório GitHub !!!
 APP_CURRENT_VERSION = "0.1.0" # Defina a versão atual do seu aplicativo
 
 # Variáveis globais para status da atualização
@@ -825,6 +895,10 @@ def build_tela_apresentacao(page: Page):
             ElevatedButton("Estatísticas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/estatisticas"), tooltip="Veja seu progresso.", bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")),
             Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
             ElevatedButton("Quiz com Fórmulas", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/formula_quiz_setup"), tooltip="Crie ou selecione um quiz baseado em fórmulas notáveis.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
+            Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
+            ElevatedButton("Divisão Diretamente Proporcional", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/divisao_direta"), tooltip="Calcular divisão diretamente proporcional.", bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")),
+            Container(height=ESPACAMENTO_BOTOES_APRESENTACAO),
+            ElevatedButton("Divisão Inversamente Proporcional", width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL, on_click=lambda _: page.go("/divisao_inversa"), tooltip="Calcular divisão inversamente proporcional.", bgcolor=obter_cor_do_tema_ativo("botao_destaque_bg"), color=obter_cor_do_tema_ativo("botao_destaque_texto")),
             Container(height=20, margin=ft.margin.only(top=10)),
         ] + controles_botoes_tema + [
             Container(height=10),
@@ -1339,6 +1413,419 @@ def build_tela_custom_quiz(page: Page):
         view_container.gradient = None
     return view_container
 
+# --- Tela para Divisão Diretamente Proporcional ---
+def build_tela_divisao_diretamente_proporcional(page: Page):
+    valor_total_field = TextField(
+        label="Valor Total a ser Dividido (V)",
+        width=350,
+        keyboard_type=KeyboardType.NUMBER,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
+
+    grandezas_column = Column(spacing=10, scroll=ScrollMode.AUTO, height=200)
+    resultados_column = Column(spacing=5, scroll=ScrollMode.AUTO, height=150)
+    feedback_text_divisao = Text("", color=obter_cor_do_tema_ativo("texto_padrao"), size=16)
+
+    def adicionar_campo_grandeza(e=None):
+        if len(grandezas_column.controls) >= 10: # Limite de 10 grandezas
+            feedback_text_divisao.value = "Limite de 10 grandezas atingido."
+            feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        novo_nome_field = TextField(
+            label=f"Nome da Parte {len(grandezas_column.controls) + 1}",
+            width=160,
+            color=obter_cor_do_tema_ativo("texto_padrao"),
+            border_color=obter_cor_do_tema_ativo("textfield_border_color")
+        )
+        nova_grandeza_field = TextField(
+            label=f"Valor da Grandeza {len(grandezas_column.controls) + 1}",
+            width=160,
+            keyboard_type=KeyboardType.NUMBER,
+            color=obter_cor_do_tema_ativo("texto_padrao"),
+            border_color=obter_cor_do_tema_ativo("textfield_border_color")
+        )
+        grandezas_column.controls.append(
+            Row([novo_nome_field, nova_grandeza_field], spacing=10, alignment=MainAxisAlignment.CENTER)
+        )
+        feedback_text_divisao.value = "" # Limpa feedback anterior
+        page.update()
+
+    def calcular_divisao_handler(e):
+        resultados_column.controls.clear()
+        try:
+            valor_total_str = valor_total_field.value
+            if not valor_total_str:
+                feedback_text_divisao.value = "Por favor, insira o Valor Total."
+                feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                page.update()
+                return
+
+            valor_total = float(valor_total_str)
+            if valor_total <= 0:
+                feedback_text_divisao.value = "O Valor Total deve ser positivo."
+                feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                page.update()
+                return
+
+            grandezas_input = []
+            for i, row_control in enumerate(grandezas_column.controls):
+                if isinstance(row_control, Row) and len(row_control.controls) == 2:
+                    nome_field = row_control.controls[0]
+                    grandeza_val_field = row_control.controls[1]
+
+                    nome = nome_field.value.strip()
+                    grandeza_str = grandeza_val_field.value
+
+                    if not nome:
+                        feedback_text_divisao.value = f"Por favor, insira o Nome da Parte {i+1}."
+                        feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                        page.update()
+                        return
+                    if not grandeza_str:
+                        feedback_text_divisao.value = f"Por favor, insira o Valor da Grandeza {i+1}."
+                        feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                        page.update()
+                        return
+
+                    grandeza_valor = float(grandeza_str)
+                    if grandeza_valor <= 0:
+                        feedback_text_divisao.value = f"O Valor da Grandeza {i+1} ('{nome}') deve ser positivo."
+                        feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                        page.update()
+                        return
+                    grandezas_input.append((nome, grandeza_valor))
+
+            if not grandezas_input:
+                feedback_text_divisao.value = "Adicione pelo menos uma grandeza."
+                feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                page.update()
+                return
+
+            resultado_calculo = calc_divisao_diretamente_proporcional(valor_total, grandezas_input)
+
+            if not resultado_calculo: # Caso de soma das grandezas ser zero
+                 feedback_text_divisao.value = "A soma das grandezas não pode ser zero."
+                 feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            else:
+                resultados_column.controls.append(
+                    Text("Resultados da Divisão:", weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"))
+                )
+                soma_partes = 0
+                for nome, parte in resultado_calculo.items():
+                    resultados_column.controls.append(
+                        Text(f"{nome}: {parte:.2f}", color=obter_cor_do_tema_ativo("texto_padrao"))
+                    )
+                    soma_partes += parte
+                resultados_column.controls.append(
+                    Text(f"Soma das Partes: {soma_partes:.2f} (Original: {valor_total:.2f})", weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao"))
+                )
+                feedback_text_divisao.value = "Cálculo realizado com sucesso!"
+                feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
+
+        except ValueError:
+            feedback_text_divisao.value = "Erro: Verifique se todos os valores numéricos são válidos."
+            feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+        except Exception as ex:
+            feedback_text_divisao.value = f"Erro inesperado: {str(ex)}"
+            feedback_text_divisao.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+        page.update()
+
+    # Adicionar campos iniciais para duas grandezas
+    adicionar_campo_grandeza()
+    adicionar_campo_grandeza()
+
+    add_grandeza_button = ElevatedButton(
+        "Adicionar Grandeza",
+        icon=Icons.ADD_CIRCLE_OUTLINE,
+        on_click=adicionar_campo_grandeza,
+        width=BOTAO_LARGURA_PRINCIPAL - 80, height=BOTAO_ALTURA_PRINCIPAL -10,
+        bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"),
+        color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")
+    )
+
+    remove_grandeza_button = ElevatedButton(
+        "Remover Última",
+        icon=Icons.REMOVE_CIRCLE_OUTLINE,
+        on_click=lambda _: (
+            grandezas_column.controls.pop() if len(grandezas_column.controls) > 1 else None,
+            page.update()
+        ),
+        width=BOTAO_LARGURA_PRINCIPAL - 80, height=BOTAO_ALTURA_PRINCIPAL -10,
+        bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"),
+        color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto"),
+        disabled=len(grandezas_column.controls) <= 1
+    )
+
+
+    calcular_button = ElevatedButton(
+        "Calcular Divisão",
+        on_click=calcular_divisao_handler,
+        width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
+        bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"),
+        color=obter_cor_do_tema_ativo("botao_principal_texto")
+    )
+    back_button = ElevatedButton(
+        "Voltar ao Menu",
+        on_click=lambda _: page.go("/"),
+        width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
+        bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"),
+        color=obter_cor_do_tema_ativo("botao_principal_texto")
+    )
+
+    content = Column(
+        controls=[
+            Text("Divisão Diretamente Proporcional", size=28, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos")),
+            Container(height=10),
+            valor_total_field,
+            Container(height=10),
+            Text("Insira as Partes e suas Grandezas:", size=18, color=obter_cor_do_tema_ativo("texto_padrao")),
+            Container(
+                content=grandezas_column,
+                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border_radius=5,
+                padding=10,
+                margin=margin.symmetric(vertical=5)
+            ),
+            Row([add_grandeza_button, remove_grandeza_button], alignment=MainAxisAlignment.CENTER, spacing=10),
+            Container(height=15),
+            calcular_button,
+            Container(height=10),
+            feedback_text_divisao,
+            Container(height=10),
+            Container(
+                content=resultados_column,
+                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border_radius=5,
+                padding=10,
+                margin=margin.symmetric(vertical=5),
+                visible= True # Sempre visível, mas conteúdo é dinâmico
+            ),
+            Container(height=15),
+            back_button,
+        ],
+        scroll=ScrollMode.AUTO,
+        alignment=MainAxisAlignment.START, # Alinhar ao topo para melhor visualização com scroll
+        horizontal_alignment=CrossAxisAlignment.CENTER,
+        spacing=ESPACAMENTO_COLUNA_GERAL
+    )
+
+    # Atualizar estado do botão de remover
+    def update_remove_button_state():
+        remove_grandeza_button.disabled = len(grandezas_column.controls) <= 1
+        page.update()
+
+    grandezas_column.on_change = lambda _: update_remove_button_state() # Atualiza se a coluna mudar (adicionar/remover)
+    update_remove_button_state() # Estado inicial
+
+
+    view_container = Container(content=content, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
+
+# --- Tela para Divisão Inversamente Proporcional ---
+def build_tela_divisao_inversamente_proporcional(page: Page):
+    valor_total_field_inv = TextField(
+        label="Valor Total a ser Dividido (V)",
+        width=350,
+        keyboard_type=KeyboardType.NUMBER,
+        color=obter_cor_do_tema_ativo("texto_padrao"),
+        border_color=obter_cor_do_tema_ativo("textfield_border_color")
+    )
+
+    grandezas_column_inv = Column(spacing=10, scroll=ScrollMode.AUTO, height=200)
+    resultados_column_inv = Column(spacing=5, scroll=ScrollMode.AUTO, height=150)
+    feedback_text_divisao_inv = Text("", color=obter_cor_do_tema_ativo("texto_padrao"), size=16)
+
+    def adicionar_campo_grandeza_inv(e=None):
+        if len(grandezas_column_inv.controls) >= 10: # Limite de 10 grandezas
+            feedback_text_divisao_inv.value = "Limite de 10 grandezas atingido."
+            feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            page.update()
+            return
+
+        novo_nome_field = TextField(
+            label=f"Nome da Parte {len(grandezas_column_inv.controls) + 1}",
+            width=160,
+            color=obter_cor_do_tema_ativo("texto_padrao"),
+            border_color=obter_cor_do_tema_ativo("textfield_border_color")
+        )
+        nova_grandeza_field = TextField(
+            label=f"Valor da Grandeza {len(grandezas_column_inv.controls) + 1} (≠0)",
+            width=160,
+            keyboard_type=KeyboardType.NUMBER,
+            color=obter_cor_do_tema_ativo("texto_padrao"),
+            border_color=obter_cor_do_tema_ativo("textfield_border_color")
+        )
+        grandezas_column_inv.controls.append(
+            Row([novo_nome_field, nova_grandeza_field], spacing=10, alignment=MainAxisAlignment.CENTER)
+        )
+        feedback_text_divisao_inv.value = ""
+        page.update()
+
+    def calcular_divisao_handler_inv(e):
+        resultados_column_inv.controls.clear()
+        try:
+            valor_total_str = valor_total_field_inv.value
+            if not valor_total_str:
+                feedback_text_divisao_inv.value = "Por favor, insira o Valor Total."
+                feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                page.update()
+                return
+
+            valor_total = float(valor_total_str)
+            if valor_total <= 0:
+                feedback_text_divisao_inv.value = "O Valor Total deve ser positivo."
+                feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                page.update()
+                return
+
+            grandezas_input = []
+            for i, row_control in enumerate(grandezas_column_inv.controls):
+                if isinstance(row_control, Row) and len(row_control.controls) == 2:
+                    nome_field = row_control.controls[0]
+                    grandeza_val_field = row_control.controls[1]
+
+                    nome = nome_field.value.strip()
+                    grandeza_str = grandeza_val_field.value
+
+                    if not nome:
+                        feedback_text_divisao_inv.value = f"Por favor, insira o Nome da Parte {i+1}."
+                        feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                        page.update()
+                        return
+                    if not grandeza_str:
+                        feedback_text_divisao_inv.value = f"Por favor, insira o Valor da Grandeza {i+1}."
+                        feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                        page.update()
+                        return
+
+                    grandeza_valor = float(grandeza_str)
+                    if grandeza_valor == 0: # Para divisão inversa, grandeza não pode ser zero
+                        feedback_text_divisao_inv.value = f"O Valor da Grandeza {i+1} ('{nome}') não pode ser zero."
+                        feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                        page.update()
+                        return
+                    if grandeza_valor < 0: # Geralmente se usa grandezas positivas
+                         feedback_text_divisao_inv.value = f"O Valor da Grandeza {i+1} ('{nome}') deve ser positivo."
+                         feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                         page.update()
+                         return
+                    grandezas_input.append((nome, grandeza_valor))
+
+            if not grandezas_input:
+                feedback_text_divisao_inv.value = "Adicione pelo menos uma grandeza."
+                feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+                page.update()
+                return
+
+            resultado_calculo = calc_divisao_inversamente_proporcional(valor_total, grandezas_input)
+
+            if not resultado_calculo or any(val is None for val in resultado_calculo.values()):
+                 feedback_text_divisao_inv.value = "Erro no cálculo. Verifique se todas as grandezas são diferentes de zero."
+                 feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+            else:
+                resultados_column_inv.controls.append(
+                    Text("Resultados da Divisão Inversa:", weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos"))
+                )
+                soma_partes = 0
+                for nome, parte in resultado_calculo.items():
+                    resultados_column_inv.controls.append(
+                        Text(f"{nome}: {parte:.2f}", color=obter_cor_do_tema_ativo("texto_padrao"))
+                    )
+                    soma_partes += parte
+                resultados_column_inv.controls.append(
+                    Text(f"Soma das Partes: {soma_partes:.2f} (Original: {valor_total:.2f})", weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_padrao"))
+                )
+                feedback_text_divisao_inv.value = "Cálculo realizado com sucesso!"
+                feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_acerto_texto")
+
+        except ValueError:
+            feedback_text_divisao_inv.value = "Erro: Verifique se todos os valores numéricos são válidos e grandezas ≠ 0."
+            feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+        except Exception as ex:
+            feedback_text_divisao_inv.value = f"Erro inesperado: {str(ex)}"
+            feedback_text_divisao_inv.color = obter_cor_do_tema_ativo("feedback_erro_texto")
+        page.update()
+
+    adicionar_campo_grandeza_inv()
+    adicionar_campo_grandeza_inv()
+
+    add_grandeza_button_inv = ElevatedButton(
+        "Adicionar Grandeza", icon=Icons.ADD_CIRCLE_OUTLINE, on_click=adicionar_campo_grandeza_inv,
+        width=BOTAO_LARGURA_PRINCIPAL - 80, height=BOTAO_ALTURA_PRINCIPAL -10,
+        bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto")
+    )
+    remove_grandeza_button_inv = ElevatedButton(
+        "Remover Última", icon=Icons.REMOVE_CIRCLE_OUTLINE,
+        on_click=lambda _: (grandezas_column_inv.controls.pop() if len(grandezas_column_inv.controls) > 1 else None, page.update()),
+        width=BOTAO_LARGURA_PRINCIPAL - 80, height=BOTAO_ALTURA_PRINCIPAL -10,
+        bgcolor=obter_cor_do_tema_ativo("botao_opcao_quiz_bg"), color=obter_cor_do_tema_ativo("botao_opcao_quiz_texto"),
+        disabled=len(grandezas_column_inv.controls) <= 1
+    )
+
+    calcular_button_inv = ElevatedButton(
+        "Calcular Divisão Inversa", on_click=calcular_divisao_handler_inv,
+        width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
+        bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")
+    )
+    back_button_inv = ElevatedButton(
+        "Voltar ao Menu", on_click=lambda _: page.go("/"),
+        width=BOTAO_LARGURA_PRINCIPAL, height=BOTAO_ALTURA_PRINCIPAL,
+        bgcolor=obter_cor_do_tema_ativo("botao_principal_bg"), color=obter_cor_do_tema_ativo("botao_principal_texto")
+    )
+
+    content_inv = Column(
+        controls=[
+            Text("Divisão Inversamente Proporcional", size=28, weight=FontWeight.BOLD, color=obter_cor_do_tema_ativo("texto_titulos")),
+            Container(height=10),
+            valor_total_field_inv,
+            Container(height=10),
+            Text("Insira as Partes e suas Grandezas (valores ≠ 0):", size=18, color=obter_cor_do_tema_ativo("texto_padrao")),
+            Container(
+                content=grandezas_column_inv,
+                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border_radius=5, padding=10, margin=margin.symmetric(vertical=5)
+            ),
+            Row([add_grandeza_button_inv, remove_grandeza_button_inv], alignment=MainAxisAlignment.CENTER, spacing=10),
+            Container(height=15),
+            calcular_button_inv,
+            Container(height=10),
+            feedback_text_divisao_inv,
+            Container(height=10),
+            Container(
+                content=resultados_column_inv,
+                border=border.all(1, obter_cor_do_tema_ativo("textfield_border_color")),
+                border_radius=5, padding=10, margin=margin.symmetric(vertical=5)
+            ),
+            Container(height=15),
+            back_button_inv,
+        ],
+        scroll=ScrollMode.AUTO, alignment=MainAxisAlignment.START,
+        horizontal_alignment=CrossAxisAlignment.CENTER, spacing=ESPACAMENTO_COLUNA_GERAL
+    )
+
+    def update_remove_button_state_inv():
+        remove_grandeza_button_inv.disabled = len(grandezas_column_inv.controls) <= 1
+        page.update()
+    grandezas_column_inv.on_change = lambda _: update_remove_button_state_inv()
+    update_remove_button_state_inv()
+
+    view_container = Container(content=content_inv, alignment=alignment.center, expand=True, padding=PADDING_VIEW)
+    if tema_ativo_nome == "escuro_moderno":
+        view_container.gradient = obter_cor_do_tema_ativo("gradient_page_bg")
+        view_container.bgcolor = None
+    else:
+        view_container.bgcolor = obter_cor_do_tema_ativo("fundo_pagina")
+        view_container.gradient = None
+    return view_container
 
 # --- Configuração Principal da Página e Rotas ---
 def main(page: Page):
@@ -1450,6 +1937,10 @@ def main(page: Page):
             page.views.append(View("/formula_quiz_setup", [build_tela_formula_quiz_setup(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
         elif page.route == "/custom_quiz":
             page.views.append(View("/custom_quiz", [build_tela_custom_quiz(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
+        elif page.route == "/divisao_direta":
+            page.views.append(View("/divisao_direta", [build_tela_divisao_diretamente_proporcional(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
+        elif page.route == "/divisao_inversa":
+            page.views.append(View("/divisao_inversa", [build_tela_divisao_inversamente_proporcional(page)], vertical_alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER, appbar=app_bar))
 
         update_ui_elements_for_update_status()
         page.update()
