@@ -308,21 +308,35 @@ def check_for_updates():
         latest_version_tag = release_info['tag_name']
 
         # Remove 'v' prefixo se existir (ex: v1.0.1 -> 1.0.1)
-        parsed_latest_version = latest_version_tag.lstrip('v')
-        parsed_current_version = APP_CURRENT_VERSION.lstrip('v')
+        parsed_latest_version_str = latest_version_tag.lstrip('v')
+        parsed_current_version_str = APP_CURRENT_VERSION.lstrip('v')
 
-        if version.parse(parsed_latest_version) > version.parse(parsed_current_version):
-            update_available = True
-            update_check_status_message = f"Nova versão {latest_version_tag} disponível!"
-            print(f"Atualização disponível: {latest_version_tag}")
-        else:
+        try:
+            # Attempt to parse the latest version from the remote
+            latest_v = version.parse(parsed_latest_version_str)
+            current_v = version.parse(parsed_current_version_str) # Assuming APP_CURRENT_VERSION is always valid
+
+            if latest_v > current_v:
+                update_available = True
+                update_check_status_message = f"Nova versão {latest_version_tag} disponível!"
+                print(f"Atualização disponível: {latest_version_tag}")
+            else:
+                update_available = False
+                update_check_status_message = "Você está na versão mais recente."
+                print("Nenhuma atualização encontrada ou versão remota é mais antiga/igual.")
+
+        except version.InvalidVersion as ive:
+            # This block catches errors if parsed_latest_version_str is invalid (e.g., "inicial")
             update_available = False
-            update_check_status_message = "Você está na versão mais recente."
-            print("Nenhuma atualização encontrada.")
+            update_check_status_message = f"Versão remota '{latest_version_tag}' não reconhecida."
+            print(f"Erro ao parsear versão remota '{latest_version_tag}': {ive}")
+
     except requests.exceptions.RequestException as e:
+        update_available = False # Ensure update_available is False on request errors
         update_check_status_message = "Erro ao verificar atualizações."
         print(f"Erro ao verificar atualizações: {e}")
-    except Exception as e:
+    except Exception as e: # Catch any other unexpected errors
+        update_available = False # Ensure update_available is False on other errors
         update_check_status_message = "Erro inesperado na verificação."
         print(f"Erro inesperado ao verificar atualizações: {e}")
 
