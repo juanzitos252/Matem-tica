@@ -1868,7 +1868,7 @@ def main(page: Page):
         base_text = f"v{APP_CURRENT_VERSION} ({current_commit_hash})"
 
         if "Erro" in update_check_status_message or "Não foi possível conectar" in update_check_status_message:
-            update_status_icon.name = ft.icons.ERROR_OUTLINE
+            update_status_icon.name = ft.Icons.ERROR_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_error")
             update_status_text.value = f"{base_text} - {update_check_status_message}"
             update_action_button.visible = False
@@ -1879,7 +1879,7 @@ def main(page: Page):
             update_status_text.value = f"Atualização: v{APP_CURRENT_VERSION} -> {latest_version_tag}"
             update_action_button.visible = True
         else: # Nenhuma atualização ou já atualizado
-            update_status_icon.name = ft.icons.CHECK_CIRCLE_OUTLINE
+            update_status_icon.name = ft.Icons.CHECK_CIRCLE_OUTLINE
             update_status_icon.color = obter_cor_do_tema_ativo("update_icon_color_uptodate")
             update_status_icon.tooltip = "Você está na versão mais recente."
             update_status_text.value = f"{base_text} - {update_check_status_message}"
