@@ -343,7 +343,8 @@ custom_formulas_data = [] # Lista para armazenar as fórmulas personalizadas
 current_custom_formula_for_quiz = None # Armazena a fórmula selecionada para o quiz personalizado
 
 # --- Constantes e Lógica de Atualização ---
-GITHUB_REPO_URL = "https://api.github.com/repos/juanzitos252/Matem-tica/releases/latest" # !!! IMPORTANTE: Substitua pelo seu URL do repositório GitHub !!!
+# !!! IMPORTANTE: Substitua pelo seu URL do repositório GitHub !!!
+GITHUB_REPO_URL_CONFIG = "https://api.github.com/repos/juanzitos252/Matem-tica/releases/latest"
 APP_CURRENT_VERSION = "0.1.0" # Defina a versão atual do seu aplicativo
 
 # Variáveis globais para status da atualização
@@ -356,7 +357,7 @@ update_check_status_message = "Verificando atualizações..."
 # Suas propriedades (cor, texto, visibilidade) serão atualizadas dinamicamente.
 
 update_status_icon = ft.Icon(
-    name=ft.icons.SYNC_PROBLEM, # Ícone inicial
+    name=ft.Icons.SYNC_PROBLEM, # Ícone inicial
     # A cor será definida dinamicamente com base no tema e status
     tooltip="Verificando atualizações...",
     size=20
@@ -369,7 +370,7 @@ update_status_text = ft.Text(
 )
 update_action_button = ft.ElevatedButton(
     text="Atualizar Agora",
-    icon=ft.icons.UPDATE,
+    icon=ft.Icons.UPDATE,
     visible=False, # Começa invisível
     # on_click será definido depois (show_update_dialog)
     # bgcolor e color serão definidos dinamicamente
@@ -478,10 +479,10 @@ def get_local_git_commit_hash():
 local_git_commit = get_local_git_commit_hash()
 
 def check_for_updates():
-    global update_available, latest_version_tag, update_check_status_message, APP_CURRENT_VERSION
+    global update_available, latest_version_tag, update_check_status_message, APP_CURRENT_VERSION, GITHUB_REPO_URL_CONFIG
     update_check_status_message = "Verificando atualizações..." # Reset message before check
     try:
-        response = requests.get(GITHUB_REPO_URL, timeout=10)
+        response = requests.get(GITHUB_REPO_URL_CONFIG, timeout=10)
         response.raise_for_status()
         release_info = response.json()
         latest_version_tag = release_info['tag_name']
@@ -501,10 +502,10 @@ def check_for_updates():
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:
             update_check_status_message = "Erro: URL de atualização não encontrada (404)."
-            print(f"Erro 404: A URL {GITHUB_REPO_URL} não foi encontrada. Verifique a configuração GITHUB_REPO_URL.")
+            print(f"Erro 404: A URL {GITHUB_REPO_URL_CONFIG} não foi encontrada. Verifique a configuração GITHUB_REPO_URL_CONFIG.")
         elif e.response.status_code == 403:
             update_check_status_message = "Erro: Acesso proibido à URL de atualização (403)."
-            print(f"Erro 403: Acesso proibido à URL {GITHUB_REPO_URL}. Verifique as permissões do token ou do repositório.")
+            print(f"Erro 403: Acesso proibido à URL {GITHUB_REPO_URL_CONFIG}. Verifique as permissões do token ou do repositório.")
         else:
             update_check_status_message = f"Erro HTTP: {e.response.status_code} ao verificar atualizações."
             print(f"Erro HTTP {e.response.status_code} ao verificar atualizações: {e}")
